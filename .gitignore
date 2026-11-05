@@ -1,0 +1,11 @@
+# ROM は入れない（setup.sh で作る）
+base/
+orig/
+build/
+*.gb
+*.gbc
+*.sav
+*.ppm
+sameboy-harness/bin/
+sameboy-harness/deps/
+__pycache__/
