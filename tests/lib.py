@@ -18,7 +18,8 @@ def const(name, path='constants/pokemon_constants.asm'):
         elif l.startswith('const '):
             if l.split()[1] == name: return v
             v += 1
-        elif l.startswith('const_skip'): v += 1
+        elif l.startswith('const_skip'):
+            p = l.split(); v += int(p[1]) if len(p) > 1 else 1
     raise KeyError(name)
 def rom(k):
     b = os.path.join(ROOT, 'build', k + '.gbc')

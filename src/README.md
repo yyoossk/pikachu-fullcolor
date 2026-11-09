@@ -5,5 +5,6 @@
 - fix_fanclub_relearner.asm … だいすきクラブの初訪問イベントで、ピカチュウが技思い出しおじさんをすりぬけるのを直す（おじさんを1マス右へ）
 - fix_enemy_hud_frame.asm … 相手のHUDの枠の線がHPの数字で途切れるのを直す（自分側と同じく、数字の下に線）
 - fix_run_pikachu.asm … ランニングシューズで走ると、つれ歩きのピカチュウが消えるのを直す（走ってもついてくる）
+- dex_info_page.asm … ずかんのタイプのページに、種族値と進化の条件も出す
 
-テスト（tests/）: hpbar.py（HPバーの色）、fly.py / sign.py / sign2.py / sign3.py / sign4.py（看板）、fan.py / nav.py / fanev.py（だいすきクラブ）、hud.py / faint.py（相手のHUDの枠）、run.py / run2.py / run3.py（走る時のピカチュウ）
+テスト（tests/）: hpbar.py（HPバーの色）、fly.py / sign.py / sign2.py / sign3.py / sign4.py（看板）、fan.py / nav.py / fanev.py（だいすきクラブ）、hud.py / faint.py（相手のHUDの枠）、run.py / run2.py / run3.py（走る時のピカチュウ）、dex.py（ずかんのタイプのページ）
