@@ -2,13 +2,12 @@
 ; 戦闘のHPバーの色が、HPが減っても緑のままになるのを直す。
 ; キットのHPの数字の表示（バンク$3Aへの farcall）が e（HPバーのドット数）をこわすので、
 ; そのよびだしの前後で de をとっておく。
+; （相手側は fix_enemy_hud_frame.asm の処理をよぶ。どちらもバンク$3A）
 
 IF DEF(V_60FPS)
 DEF KIT_PLAYER_HP EQU $7aa4
-DEF KIT_ENEMY_HP  EQU $71b8
 ELSE
 DEF KIT_PLAYER_HP EQU $7a84
-DEF KIT_ENEMY_HP  EQU $7198
 ENDC
 
 SECTION "HPBarColorHookPlayer", ROMX[$4ff7], BANK[$0f]
@@ -26,7 +25,7 @@ KitPlayerHPKeepDE:
 	jr KitHPKeepDECommon
 KitEnemyHPKeepDE:
 	push de
-	ld hl, KIT_ENEMY_HP
+	ld hl, EnemyHUDNumbersAndFrame ; キットのHPの数字＋枠（fix_enemy_hud_frame.asm）
 KitHPKeepDECommon:
 	ld b, $3a
 	call Bankswitch

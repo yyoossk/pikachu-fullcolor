@@ -2,7 +2,8 @@ import sys; sys.path.insert(0,'.')
 from lib import *
 k=sys.argv[1]; tag=sys.argv[2] if len(sys.argv)>2 else 'fan'
 r,s=rom(k); S,BK=loadsym(s)
-g=GR(r,state='/tmp/claude-0/pallet_'+k+'.st')
+g=GR(r,state=(sys.argv[3] if len(sys.argv)>3 else '/tmp/claude-0/pallet_'+k+'.st'))
+for i in range(6): g.press('B',4,30)
 def pos(): return g.peek(S['wCurMap'])[0], g.peek(S['wXCoord'])[0], g.peek(S['wYCoord'])[0]
 def step(d,n=1):
     for _ in range(n): g.down(d); g.wait(18); g.up(d); g.wait(6)
