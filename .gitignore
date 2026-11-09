@@ -9,3 +9,4 @@ build/
 sameboy-harness/bin/
 sameboy-harness/deps/
 __pycache__/
+watch.log

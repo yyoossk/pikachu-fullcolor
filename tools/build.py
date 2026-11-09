@@ -51,6 +51,7 @@ def build(k):
     link = os.path.join(RGB, 'rgblink')
     if not objs:
         data = open(base, 'rb').read()
+        open(os.path.join(ROOT, 'build', k + '.sym'), 'w').write(open(os.path.join(ROOT, 'syms', k + '.sym')).read())
     else:
         # 1) a link without the base ROM: the floating sections' sizes and banks
         run([link, '-m', os.path.join(out, 'trial.map'), '-o', os.path.join(out, 'trial.gb'), symo] + objs)
