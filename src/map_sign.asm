@@ -3,7 +3,7 @@
 ;   ・枠: クリスタルの看板の枠（src/gfx/map_sign_frame.inc、VRAMバンク1のタイル $51〜$5D）
 ;   ・色: クリスタルの看板の色（うすい黄色 31,31,16 ／ 茶色 14,9,0 ／ 黒）。BGパレット7の色1・2を、
 ;         看板が出ているあいだだけかえる（文字の窓は色0・3しか使わないので、かわらない）
-;   ・名前: 真ん中によせる
+;   ・名前: 真ん中によせる。字形は VRAMバンク1 の $9000〜（バッファの何番め = タイルの番号）に置く
 ;   ・出入り: 下からスッと出て、時間がたつとスッと引っこむ（1フレーム2ドット）
 ;   ・看板の行にかかる人などのスプライトはかくす（看板の今の高さに合わせる）
 ; キットの看板の処理（バンク$3A）はそのまま使い、何か所かをかえる。
@@ -19,7 +19,9 @@ DEF KitSignNamePos   EQU $7670 + KS ; ld hl, $cda6（名前の位置）
 DEF KitSignCopyCall  EQU $7679 + KS ; call KitSignCopy
 DEF KitSignCopy      EQU $76d3 + KS ; バッファ → ウインドウ（$9C00）へ
 DEF KitSignAttr      EQU $76e8 + KS ; ld c, 7 / ld a, b / cp $80 / jr c, +2 / set 3, c
-DEF KitSignGlyphPut  EQU $7760 + KS ; ld a, b / ld [de], a / inc de / ld [de], a / inc de
+DEF KitSignGlyph     EQU $772f + KS ; 名前の字形を読みこむ（$776e の手前まで書きかえる）
+DEF KitSignWaitHBlank EQU $776e + KS ; VRAM に書けるまで待つ
+DEF wSignGlyphBuf   EQU $cee4 ; 字形 8バイト（キットと同じ）
 
 DEF hIsGBC          EQU $fffe
 DEF wMapSignTimer   EQU $d6a4 ; キットの看板の、のこり時間（0 なら出ていない）
@@ -61,9 +63,47 @@ SECTION "MapSignHookAttr", ROMX[KitSignAttr], BANK[$3a]
 	ld c, SIGN_ATTR ; どのタイルもバンク1・パレット7
 	ds 7, 0
 
-SECTION "MapSignHookGlyph", ROMX[KitSignGlyphPut], BANK[$3a]
-	call MapSignGlyphPut ; 文字の地を色1（看板の色）にする
-	ds 2, 0
+SECTION "MapSignHookGlyph", ROMX[KitSignGlyph], BANK[$3a]
+; 名前の字形を読みこむ（キットの処理 KitSignGlyph を書きかえる。b = 字 $80〜）。
+; キットは字形を VRAMバンク1 の「字と同じ番号」（$8800〜）に置いていたが、そこはバンク1 のスプライトの
+; タイル $80〜 と同じ場所なので、看板のバッファの何番め（0〜79）をタイルの番号にして、バンク1 の
+; $9000〜（タイル $00〜$4F。名前の行は $14〜$3B。どのマップでも使っていない）に置き、b をその番号にかえてもどる。
+; 字は「地を色1、字を色3」にする。
+; スタック: +0 もどり先 +2 de +4 bc +6 hl（バッファの次の字）
+MapSignGlyph:
+	ld hl, sp + 6
+	ld a, [hl]
+	sub LOW(wSignBuffer) + 1
+	push af ; タイルの番号
+	push bc
+	ld a, b
+	sub $80
+	ld l, a
+	ld h, 0
+	add hl, hl
+	add hl, hl
+	add hl, hl
+	ld bc, FontGraphics
+	add hl, bc
+	ld de, wSignGlyphBuf
+	ld bc, 8
+	ld a, BANK(FontGraphics)
+	call FarCopyData
+	ld hl, sp + 3
+	ld l, [hl]
+	ld h, 0
+	add hl, hl
+	add hl, hl
+	add hl, hl
+	add hl, hl
+	ld bc, $9000
+	add hl, bc
+	ld d, h
+	ld e, l
+	ld hl, wSignGlyphBuf
+	ld c, 8
+	jp MapSignGlyphRows
+	assert @ <= KitSignWaitHBlank
 
 ; PrepareOAMData の最後（VBlank の中）。看板の出入りと、スプライトをかくす
 SECTION "MapSignSpritesHook", ROMX[$4996], BANK[$01]
@@ -104,6 +144,25 @@ MapSignCenterName:
 	ld b, 0
 	ld hl, wSignBuffer + 2 * SCREEN_WIDTH
 	add hl, bc
+	ret
+
+; MapSignGlyph のつづき: 8行を VRAMバンク1 へ（地を色1、字を色3）。hl = 字形、de = VRAM
+MapSignGlyphRows:
+	ld a, [hli]
+	ld b, a
+	di
+	ld a, 1
+	ldh [rVBK], a
+	call KitSignWaitHBlank
+	call MapSignGlyphPut
+	xor a
+	ldh [rVBK], a
+	ei
+	dec c
+	jr nz, MapSignGlyphRows
+	pop bc
+	pop af
+	ld b, a
 	ret
 
 ; 文字の1行をVRAMに（地を色1、字を色3）。b = 字の1bpp、de = VRAM
