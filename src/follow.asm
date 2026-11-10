@@ -1353,8 +1353,10 @@ FwT_Find:
 	done
 FwT_GotItem:
 	text "<PLAYER>は"
-	line "きんのたまを　てにいれた！"
-	prompt
+	line "きんのたまを　てにいれた！@"
+	sound_get_item_1
+	text_promptbutton
+	text_end
 FwT_BagFull:
 	text "しかし　どうぐが"
 	line "いっぱいで　もてない！"

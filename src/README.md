@@ -6,5 +6,6 @@
 - fix_enemy_hud_frame.asm … 相手のHUDの枠の線がHPの数字で途切れるのを直す（自分側と同じく、数字の下に線）
 - fix_run_pikachu.asm … ランニングシューズで走ると、つれ歩きのピカチュウが消えるのを直す（走ってもついてくる）
 - dex_info_page.asm … ずかんのタイプのページに進化の条件を足し、その次に種族値のページを足す
+- follow.asm … 連れ歩き（全ポケモン。赤緑青ピカチュウ連れ歩きキット）。手持ちの画面の SELECT でえらんだポケモン（赤い★）が後ろを歩く。最初のピカチュウは今までどおり。絵・下じき・色は gfx/follow/（tools/follow_data.py で reference/follow_kit から作る）。v f x xf だけ
 
-テスト（tests/）: hpbar.py（HPバーの色）、fly.py / sign.py / sign2.py / sign3.py / sign4.py（看板）、fan.py / nav.py / fanev.py（だいすきクラブ）、hud.py / faint.py（相手のHUDの枠）、run.py / run2.py / run3.py（走る時のピカチュウ）、dex.py（ずかんのタイプのページ）
+テスト（tests/）: hpbar.py（HPバーの色）、fly.py / sign.py / sign2.py / sign3.py / sign4.py（看板）、fan.py / nav.py / fanev.py（だいすきクラブ）、hud.py / faint.py（相手のHUDの枠）、run.py / run2.py / run3.py（走る時のピカチュウ）、dex.py（ずかんのタイプのページ）、folmk.py / fol_*.py（連れ歩き。fol_lib.py が道具）
