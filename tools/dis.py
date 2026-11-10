@@ -2,7 +2,8 @@
 """かんたんな逆アセンブラ（SM83）。
   python3 tools/dis.py base/v.gbc 3a:7600 [行数] [syms/v.sym]
 """
-import sys
+import sys, signal
+signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 R = ['b', 'c', 'd', 'e', 'h', 'l', '[hl]', 'a']
 RP = ['bc', 'de', 'hl', 'sp']; RP2 = ['bc', 'de', 'hl', 'af']
 CC = ['nz', 'z', 'nc', 'c']

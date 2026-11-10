@@ -67,8 +67,13 @@ SECTION "MapSignHookGlyph", ROMX[KitSignGlyphPut], BANK[$3a]
 
 ; PrepareOAMData の最後（VBlank の中）。看板の出入りと、スプライトをかくす
 SECTION "MapSignSpritesHook", ROMX[$4996], BANK[$01]
+IF DEF(V_SHODAI)
 	ld hl, MapSignOAMTail
 	ld b, BANK(MapSignOAMTail)
+ELSE
+	ld hl, FwOAMTail ; 連れ歩きの白い下じき（follow.asm）のあと、MapSignOAMTail へ
+	ld b, BANK(FwOAMTail)
+ENDC
 	jp Bankswitch
 
 ; ---------------------------------------------------------------- 本体
@@ -370,7 +375,7 @@ MapSignUploadPals:
 	jp Bankswitch
 
 ; PrepareOAMData の最後（VBlank の中、バンク1からとんでくる）
-MapSignOAMTail:
+MapSignOAMTail::
 	ldh a, [rSVBK]
 	ld e, a ; 元のWRAMバンク（スタックは使えない）
 	ld a, SIGN_WRAM_BANK

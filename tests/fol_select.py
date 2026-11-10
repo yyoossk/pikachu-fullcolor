@@ -1,0 +1,18 @@
+import sys; sys.path.insert(0,'/home/claude/pk/fc/tests')
+from lib import *
+k=sys.argv[1]; r,s=rom(k); S,BK=loadsym(s)
+g=GR(r,state=f'/tmp/claude-0/fol_{k}.st'); g.wait(2)
+g.press('S',4,30); g.press('A',4,90)
+g.shot('/tmp/claude-0/pm0.png')
+g.press('D',4,20); g.press('s',4,40)
+g.shot('/tmp/claude-0/pm1.png')
+print('mode', g.peek(0xd3f5)[0], g.peek(0xd3f6,3), g.peek(0xd3f3)[0])
+g.press('D',4,20); g.press('s',4,40); g.shot('/tmp/claude-0/pm2.png')
+g.press('s',4,40); g.shot('/tmp/claude-0/pm3.png'); print('mode', g.peek(0xd3f5)[0])
+g.press('s',4,40); g.shot('/tmp/claude-0/pm4.png'); print('mode', g.peek(0xd3f5)[0])
+g.press('B',4,60); g.press('B',4,60); g.wait(60)
+g.shot('/tmp/claude-0/pm5.png'); print('d471', hex(g.peek(S['wd471'])[0]), g.wpeek(7,0xd010,3))
+for d in 'LL':
+    g.down(d); g.wait(17); g.up(d); g.wait(6)
+g.wait(20); g.shot('/tmp/claude-0/pm6.png')
+g.save_state(f'/tmp/claude-0/char_{k}.st')
