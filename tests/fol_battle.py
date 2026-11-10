@@ -1,0 +1,18 @@
+# 野生のバトルからもどったとき、連れ歩きの絵・下じき・色がそのままか
+import sys; sys.path.insert(0,'.')
+from fol_lib import *
+k=sys.argv[1]; slot=int(sys.argv[2])
+g,S=start(k,f'/tmp/claude-0/pal_{k}.st',slot)
+for d in 'RL': step(g,d,1); g.wait(8)
+g.wait(30); g.shot('/tmp/claude-0/bt_0.png'); v0=g.vpeek(0,0x80c0,384); v1=g.vpeek(1,0x80c0,384); p0=g.pals()
+wild_battle(g,S,const('RATTATA'),3)
+g.shot('/tmp/claude-0/bt_1.png')
+g.press('D',4,10); g.press('R',4,10); g.press('A',4,60)
+for i in range(10): g.press('A',4,30)
+g.wait(120); g.shot('/tmp/claude-0/bt_2.png')
+print('inbattle', g.peek(S['wIsInBattle'])[0], pos(g,S), fpos(g,S))
+v0b=g.vpeek(0,0x80c0,384); v1b=g.vpeek(1,0x80c0,384); p1=g.pals()
+print('vram0 same', v0==v0b, 'vram1 same', v1==v1b, 'pals same', p0==p1)
+if p0!=p1: print(p0); print(p1)
+step(g,'L',1); g.wait(20); g.shot('/tmp/claude-0/bt_3.png')
+strip(['/tmp/claude-0/bt_0.png','/tmp/claude-0/bt_1.png','/tmp/claude-0/bt_2.png','/tmp/claude-0/bt_3.png'],'/tmp/claude-0/bt_strip.png',scale=1,cols=4)

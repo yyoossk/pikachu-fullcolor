@@ -30,6 +30,7 @@ DEF FW_MASK_BANK EQU $2e ; 下じき: 1バンクに 85匹（下のビットだ�
 DEF FW_MASKCOPY  EQU $7fc0 ; 下じきのバンクの中の、VRAMバンク1に書く処理
 DEF FW_STAR_TILE EQU $24 ; ★のタイル（VRAMバンク1）
 DEF FW_UNDERLAY_TILE EQU $0c ; 下じきのタイル（VRAMバンク1 の $0C〜$23）
+DEF FW_SIGN_ADDR EQU $8000 + $25 * 16 ; 下じきのしるし（VRAMバンク1 のタイル $25 の最初の2バイト）
 
 IF DEF(V_60FPS)
 DEF FW_KS        EQU $20
@@ -424,7 +425,8 @@ FwSheet::
 	and a
 	jr z, .gfx
 	push bc
-	call FwLoadUnderlay
+	call FwUnderlayLoaded
+	call nz, FwLoadUnderlay
 	pop bc
 .gfx
 	ld a, c
@@ -464,8 +466,47 @@ ENDR
 	pop hl
 	ret
 
-; c = ずかん番号 → 白い下じきを VRAMバンク1 の $80C0〜（24タイル）に
+; z: c（ずかん番号）の下じきが、もう VRAMバンク1 にある（しるしのタイルの2バイトが c, ~c）
+; マップのつながりなどで、同じ下じきを読みなおして重くならないように
+FwUnderlayLoaded:
+	ld hl, FW_SIGN_ADDR
+	di
+	ld a, 1
+	ldh [rVBK], a
+	call FwWaitVRAM
+	ld a, [hli]
+	ld e, [hl]
+	ld d, a
+	xor a
+	ldh [rVBK], a
+	ei
+	ld a, d
+	cp c
+	ret nz
+	ld a, c
+	cpl
+	cp e
+	ret
+
+; c = ずかん番号 → 白い下じきを VRAMバンク1 の $80C0〜（24タイル）に。しるしも書く
 FwLoadUnderlay:
+	push bc
+	call .copy
+	pop bc
+	ld hl, FW_SIGN_ADDR
+	di
+	ld a, 1
+	ldh [rVBK], a
+	call FwWaitVRAM
+	ld a, c
+	ld [hli], a
+	cpl
+	ld [hl], a
+	xor a
+	ldh [rVBK], a
+	ei
+	ret
+.copy
 	ld a, c
 	dec a
 	ld b, FW_MASK_BANK
