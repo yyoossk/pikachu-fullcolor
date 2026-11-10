@@ -4,7 +4,7 @@
   python3 tools/follow_data.py
 ・絵: 1匹 24タイル（止まり 下・上・横、歩き 下・上・横 の順）。
   正面（下向き）は、この版の手持ちのアイコン（ポケモンごとの絵、2コマ）と同じ絵にする（止まり＝1コマめ、歩き＝2コマめ）。
-  後ろ・横はキットの絵。色はアイコンと同じ1本のパレットにするので、キットの「後ろ・横 用」の色の
+  後ろ・横はキットの絵（横はキットでは右向きなので、左向きに反転する）。色はアイコンと同じ1本のパレットにするので、キットの「後ろ・横 用」の色の
   2色が、アイコンの2色と入れかえた方が近い（ドットの多い色ほど重く見る）ポケモンは、後ろ・横のタイルの色1と色2を入れかえる（2bpp の上下のビットをいれかえる）。
 ・下じき: 1匹 192バイト（下のビットだけ。上のビットはいつも 0）。
   正面はアイコンの絵から作る（まわりとつながっていない すき間＝目・顔の白 を白に）。後ろ・横はキットの下じき。
@@ -28,6 +28,12 @@ def table(name):
 own = table('FollowerOwnPals'); walk = table('FollowerWalkPals')
 
 BACKSIDE = [4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 20, 21, 22, 23]
+SIDE = [8, 20]  # 横向き（止まり・歩き）の 4タイル（左上・右上・左下・右下）の はじめ
+REV = bytes(int('{:08b}'.format(i)[::-1], 2) for i in range(256))
+def mirror(buf, t0, size):  # 16×16 の絵を左右反転（タイルの左右を入れかえ、1行ずつビットを逆に）
+    tl = [bytes(REV[x] for x in buf[(t0 + i) * size:(t0 + i + 1) * size]) for i in range(4)]
+    for i, j in enumerate((1, 0, 3, 2)):
+        buf[(t0 + i) * size:(t0 + i + 1) * size] = tl[j]
 rom = open(os.path.join(ROOT, 'base', 'v.gbc'), 'rb').read()
 def icon_off(d):  # この版の手持ちのアイコン（バンク$30 の読みこみの処理と同じ分けかた）。1匹 128バイト（2コマ）
     if d < 0x54: return 0x28 * 0x4000 + 0x15f9 + d * 128
@@ -82,10 +88,13 @@ for d in range(151):
             for r in range(8):
                 a = t * 16 + r * 2
                 g[a], g[a + 1] = g[a + 1], g[a]
-    gfx += g
     mm = m[d * 384:(d + 1) * 384]
     assert all(mm[i] == 0 for i in range(1, 384, 2))
     mk = bytearray(mm[i] for i in range(0, 384, 2))
+    # キットの横向きの絵は右向き。この版は「横＝左向き、右へ行くときは左右反転」なので、左向きにする
+    for t0 in SIDE:
+        mirror(g, t0, 16); mirror(mk, t0, 8)
+    gfx += g
     mk[0:32] = front_mask(ic[0:64]); mk[12 * 8:16 * 8] = front_mask(ic[64:128])
     mask += mk
     for c in (i1, i2): pals += bytes([c & 255, c >> 8])
