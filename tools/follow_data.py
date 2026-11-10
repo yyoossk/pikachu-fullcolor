@@ -3,11 +3,12 @@
   元: reference/follow_kit/（赤緑青ピカチュウ連れ歩きキットの絵と色）
   python3 tools/follow_data.py
 ・絵: 1匹 24タイル（止まり 下・上・横、歩き 下・上・横 の順）。
-  後ろ・横の色（キットの「後ろ・横 用」の表）が、正面の色（手持ちと同じ色）の色1・色2を入れかえたものの
-  ポケモンは、後ろ・横のタイルの色1と色2を入れかえておく（2bpp の上下のビットをいれかえる）。
-  こうすると、1本のパレット（正面の色）で、どの向きも正しい色になる。
+  正面（下向き）は、この版の手持ちのアイコン（ポケモンごとの絵、2コマ）と同じ絵にする（止まり＝1コマめ、歩き＝2コマめ）。
+  後ろ・横はキットの絵。色はアイコンと同じ1本のパレットにするので、キットの「後ろ・横 用」の色の
+  明るい・暗いの順がアイコンの色と逆のポケモンは、後ろ・横のタイルの色1と色2を入れかえる（2bpp の上下のビットをいれかえる）。
 ・下じき: 1匹 192バイト（下のビットだけ。上のビットはいつも 0）。
-・色: 1匹 4バイト（色1・色2）。
+  正面はアイコンの絵から作る（まわりとつながっていない すき間＝目・顔の白 を白に）。後ろ・横はキットの下じき。
+・色: 1匹 4バイト（色1・色2）。この版の手持ちのアイコンの色。
 ・番号: 内部の番号（1〜190）→ ずかん番号−1（0〜150）。$FF は いない番号。
 """
 import os, re
@@ -27,15 +28,50 @@ def table(name):
 own = table('FollowerOwnPals'); walk = table('FollowerWalkPals')
 
 BACKSIDE = [4, 5, 6, 7, 8, 9, 10, 11, 16, 17, 18, 19, 20, 21, 22, 23]
+rom = open(os.path.join(ROOT, 'base', 'v.gbc'), 'rb').read()
+def icon_off(d):  # この版の手持ちのアイコン（バンク$30 の読みこみの処理と同じ分けかた）。1匹 128バイト（2コマ）
+    if d < 0x54: return 0x28 * 0x4000 + 0x15f9 + d * 128
+    if d < 0x54 + 0x35: return 0x34 * 0x4000 + 0x2576 + (d - 0x54) * 128
+    return 0x30 * 0x4000 + 0x319e + (d - 0x89) * 128
+ICONPAL = 0x30 * 0x4000 + 0x0fe8  # 1匹 8バイト（色1・色2・黒・白）
+def lum(c): return (c & 31) * 299 + (c >> 5 & 31) * 587 + (c >> 10 & 31) * 114
+def front_mask(frame):  # 4タイル（左上・右上・左下・右下）→ まわりとつながっていない色0 の所を 1 に
+    px = [[0] * 16 for _ in range(16)]
+    for t in range(4):
+        for r in range(8):
+            lo, hi = frame[t * 16 + r * 2], frame[t * 16 + r * 2 + 1]
+            for c in range(8):
+                px[(t // 2) * 8 + r][(t % 2) * 8 + c] = (lo >> (7 - c) & 1) | (hi >> (7 - c) & 1) << 1
+    out = [[0] * 16 for _ in range(16)]
+    seen = set(); st = [(y, x) for y in range(16) for x in range(16) if (y in (0, 15) or x in (0, 15)) and px[y][x] == 0]
+    while st:
+        y, x = st.pop()
+        if (y, x) in seen: continue
+        seen.add((y, x))
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            yy, xx = y + dy, x + dx
+            if 0 <= yy < 16 and 0 <= xx < 16 and px[yy][xx] == 0: st.append((yy, xx))
+    m = bytearray()
+    for t in range(4):
+        for r in range(8):
+            b = 0
+            for c in range(8):
+                y, x = (t // 2) * 8 + r, (t % 2) * 8 + c
+                if px[y][x] == 0 and (y, x) not in seen: b |= 1 << (7 - c)
+            m.append(b)
+    return m
 gfx = bytearray(); mask = bytearray(); pals = bytearray()
 m = open(os.path.join(KIT, 'follow_icon', 'mask.bin'), 'rb').read()
 nswap = 0
 for d in range(151):
     g = bytearray(open(os.path.join(KIT, 'follow_icon', '%03d.2bpp' % d), 'rb').read())
     assert len(g) == 384
-    o = own[d + 1][:2]; w = walk[d + 1][:2]
-    if o != w:
-        assert o == w[::-1], d
+    ic = rom[icon_off(d):icon_off(d) + 128]
+    g[0:64] = ic[0:64]; g[12 * 16:16 * 16] = ic[64:128]
+    i1 = rom[ICONPAL + d * 8] | rom[ICONPAL + d * 8 + 1] << 8
+    i2 = rom[ICONPAL + d * 8 + 2] | rom[ICONPAL + d * 8 + 3] << 8
+    w1, w2 = walk[d + 1][:2]
+    if (lum(w1) > lum(w2)) != (lum(i1) > lum(i2)):
         nswap += 1
         for t in BACKSIDE:
             for r in range(8):
@@ -44,8 +80,10 @@ for d in range(151):
     gfx += g
     mm = m[d * 384:(d + 1) * 384]
     assert all(mm[i] == 0 for i in range(1, 384, 2))
-    mask += bytes(mm[i] for i in range(0, 384, 2))
-    for c in o: pals += bytes([c & 255, c >> 8])
+    mk = bytearray(mm[i] for i in range(0, 384, 2))
+    mk[0:32] = front_mask(ic[0:64]); mk[12 * 8:16 * 8] = front_mask(ic[64:128])
+    mask += mk
+    for c in (i1, i2): pals += bytes([c & 255, c >> 8])
 open(os.path.join(OUT, 'gfx.bin'), 'wb').write(gfx)
 open(os.path.join(OUT, 'mask1bpp.bin'), 'wb').write(mask)
 open(os.path.join(OUT, 'pals.bin'), 'wb').write(pals)
@@ -56,7 +94,6 @@ for l in open(os.path.join(ROOT, 'syms', 'v.sym')):
     p = l.split()
     if len(p) == 2 and ':' in p[0]: syms[p[1]] = p[0]
 b, a = syms['PokedexOrder'].split(':'); off = int(b, 16) * 0x4000 + int(a, 16) - 0x4000
-rom = open(os.path.join(ROOT, 'base', 'v.gbc'), 'rb').read()
 order = rom[off:off + 190]
 dex = bytes((x - 1) if 1 <= x <= 151 else 0xff for x in order)
 open(os.path.join(OUT, 'dex.bin'), 'wb').write(dex)

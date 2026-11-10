@@ -15,9 +15,9 @@ for i in range(190):
 W=Image.new('RGB',(16*3*2*10+20, 20*2*16))
 for d in range(1,152):
     g.poke(S['wPartySpecies']+1, dex2int[d]); g.poke(S['wPartyMon1']+44, dex2int[d])
-    g.wait(12)
+    g.wait(30)
     for j,face in enumerate((0,4,8)):
-        g.poke(0xc1f9,face); g.poke(0xc1f2,face); g.wait(3)
+        g.poke(0xc1f9,face); g.poke(0xc1f2,face); g.wait(4)
         o=g.oam(); ent=[(o[i*4],o[i*4+1]) for i in range(40) if 0<o[i*4]<160 and (o[i*4+2]&0x7f)-0x0c in range(12) and o[i*4+3]&7==6]
         g.shot('/tmp/claude-0/am.png'); im=Image.open('/tmp/claude-0/am.png').convert('RGB')
         if ent:
