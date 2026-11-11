@@ -24,6 +24,7 @@ DEF FW_WRAM_BANK EQU 7
 DEF wFwVramDex  EQU $d010 ; VRAM に読んである絵（ずかん番号。0 = ピカチュウ）
 DEF wFwPalDex   EQU $d011 ; OBJ パレット6に書いてある色（0 = ピカチュウ）
 DEF wFwKitDex   EQU $d012 ; 今の連れ歩き（キットの絵のとき ずかん番号。0 = ピカチュウ・いない）
+DEF wFwPalFace  EQU $d013 ; OBJ パレット6に書いてある色の向き（0 = 正面の色、1 = 後ろ・横の色）
 
 DEF FW_GFX_BANK  EQU $2a ; 絵: 1バンクに 42匹
 DEF FW_MASK_BANK EQU $2e ; 下じき: 1バンクに 85匹（下のビットだけ 192バイト）
@@ -382,10 +383,24 @@ FwUpdateFlags::
 	jr z, .walk
 	ld e, 0
 .walk
+	ld d, 0 ; 色の向き（FwOBPal と同じ決めかた）
+	ld a, e
+	and a
+	jr z, .face
+	ld a, [wSpritePikachuStateData1FacingDirection]
+	and a
+	jr z, .face
+	inc d
+.face
 	fw_b7_read c, wFwPalDex
 	ld a, e
 	cp c
+	jr nz, .rebuild
+	fw_b7_read c, wFwPalFace
+	ld a, d
+	cp c
 	jr z, .done
+.rebuild
 	ld hl, $6156 ; パレットを作りなおして送る（FwOBPal が色を書く）
 	ld b, $3b
 	call Bankswitch
@@ -846,16 +861,32 @@ FwOBPal:
 	jr z, .walk
 	ld l, 0
 .walk
+; 色の向き: 連れ歩きが下を向いているときは正面の色（手持ちのアイコンの色）、
+; 上・横を向いているときは後ろ・横の色（キットの「歩き」の色。キットの後ろ・横の絵はこの色で描いてある）
+	ld h, 0
+	ld a, l
+	and a
+	jr z, .gotFace
+	ld a, [wSpritePikachuStateData1FacingDirection]
+	and a
+	jr z, .gotFace
+	inc h
+.gotFace
+	fw_b7_write wFwPalFace, h
 	ld a, l
 	and a
 	jp z, .save
 	dec a
 	push hl
+	ld de, FwPals
+	bit 0, h
+	jr z, .front
+	ld de, FwPalsBack
+.front
 	ld l, a
 	ld h, 0
 	add hl, hl
 	add hl, hl
-	ld de, FwPals
 	add hl, de
 	ld a, [hli]
 	ld b, a
@@ -886,6 +917,8 @@ FwOBPal:
 
 FwPals:
 	INCBIN "gfx/follow/pals.bin"
+FwPalsBack:
+	INCBIN "gfx/follow/palsback.bin"
 
 ; ================================================================ 絵・下じき
 SECTION "FwGfx0", ROMX[$4000], BANK[FW_GFX_BANK]

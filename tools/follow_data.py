@@ -4,11 +4,11 @@
   python3 tools/follow_data.py
 ・絵: 1匹 24タイル（止まり 下・上・横、歩き 下・上・横 の順）。
   正面（下向き）は、この版の手持ちのアイコン（ポケモンごとの絵、2コマ）と同じ絵にする（止まり＝1コマめ、歩き＝2コマめ）。
-  後ろ・横はキットの絵（横はキットでは右向きなので、左向きに反転する）。色はアイコンと同じ1本のパレットにするので、キットの「後ろ・横 用」の色の
-  2色が、アイコンの2色と入れかえた方が近い（ドットの多い色ほど重く見る）ポケモンは、後ろ・横のタイルの色1と色2を入れかえる（2bpp の上下のビットをいれかえる）。
+  後ろ・横はキットの絵（横はキットでは右向きなので、左向きに反転する）。色はキットのまま（キットの「歩き」の色で描いてある）。
 ・下じき: 1匹 192バイト（下のビットだけ。上のビットはいつも 0）。
   正面はアイコンの絵から作る（まわりとつながっていない すき間＝目・顔の白 を白に）。後ろ・横はキットの下じき。
-・色: 1匹 4バイト（色1・色2）。この版の手持ちのアイコンの色。
+・色: 1匹 4バイト（色1・色2）。pals.bin は正面の色（この版の手持ちのアイコンの色）、
+  palsback.bin は後ろ・横の色（キットの「歩き」の色）。連れ歩きの向きで OBJ パレット6 を入れかえる。
 ・番号: 内部の番号（1〜190）→ ずかん番号−1（0〜150）。$FF は いない番号。
 """
 import os, re
@@ -66,9 +66,8 @@ def front_mask(frame):  # 4タイル（左上・右上・左下・右下）→ �
                 if px[y][x] == 0 and (y, x) not in seen: b |= 1 << (7 - c)
             m.append(b)
     return m
-gfx = bytearray(); mask = bytearray(); pals = bytearray()
+gfx = bytearray(); mask = bytearray(); pals = bytearray(); palsback = bytearray()
 m = open(os.path.join(KIT, 'follow_icon', 'mask.bin'), 'rb').read()
-nswap = 0
 for d in range(151):
     g = bytearray(open(os.path.join(KIT, 'follow_icon', '%03d.2bpp' % d), 'rb').read())
     assert len(g) == 384
@@ -77,17 +76,6 @@ for d in range(151):
     i1 = rom[ICONPAL + d * 8] | rom[ICONPAL + d * 8 + 1] << 8
     i2 = rom[ICONPAL + d * 8 + 2] | rom[ICONPAL + d * 8 + 3] << 8
     w1, w2 = walk[d + 1][:2]
-    n1 = n2 = 0  # 後ろ・横の絵で、色1・色2 のドットの数（多い色ほど近い色に）
-    for t in BACKSIDE:
-        for r in range(8):
-            lo, hi = g[t * 16 + r * 2], g[t * 16 + r * 2 + 1]
-            n1 += bin(lo & ~hi & 255).count('1'); n2 += bin(hi & ~lo & 255).count('1')
-    if n1 * dist(w1, i2) + n2 * dist(w2, i1) < n1 * dist(w1, i1) + n2 * dist(w2, i2):
-        nswap += 1
-        for t in BACKSIDE:
-            for r in range(8):
-                a = t * 16 + r * 2
-                g[a], g[a + 1] = g[a + 1], g[a]
     mm = m[d * 384:(d + 1) * 384]
     assert all(mm[i] == 0 for i in range(1, 384, 2))
     mk = bytearray(mm[i] for i in range(0, 384, 2))
@@ -98,9 +86,11 @@ for d in range(151):
     mk[0:32] = front_mask(ic[0:64]); mk[12 * 8:16 * 8] = front_mask(ic[64:128])
     mask += mk
     for c in (i1, i2): pals += bytes([c & 255, c >> 8])
+    for c in (w1, w2): palsback += bytes([c & 255, c >> 8])
 open(os.path.join(OUT, 'gfx.bin'), 'wb').write(gfx)
 open(os.path.join(OUT, 'mask1bpp.bin'), 'wb').write(mask)
 open(os.path.join(OUT, 'pals.bin'), 'wb').write(pals)
+open(os.path.join(OUT, 'palsback.bin'), 'wb').write(palsback)
 
 # 内部の番号 → ずかん番号（元の ROM の PokedexOrder）
 syms = {}
@@ -111,4 +101,4 @@ b, a = syms['PokedexOrder'].split(':'); off = int(b, 16) * 0x4000 + int(a, 16) -
 order = rom[off:off + 190]
 dex = bytes((x - 1) if 1 <= x <= 151 else 0xff for x in order)
 open(os.path.join(OUT, 'dex.bin'), 'wb').write(dex)
-print('swap', nswap, 'gfx', len(gfx), 'mask', len(mask), 'pals', len(pals), 'dex', len(dex))
+print('gfx', len(gfx), 'mask', len(mask), 'pals', len(pals), 'dex', len(dex))

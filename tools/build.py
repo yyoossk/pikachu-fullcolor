@@ -55,10 +55,14 @@ def build(k):
     else:
         # 1) a link without the base ROM: the floating sections' sizes and banks
         run([link, '-m', os.path.join(out, 'trial.map'), '-o', os.path.join(out, 'trial.gb'), symo] + objs)
-        secs = []
+        secs = []; where = {}; bank = 0
         for l in open(os.path.join(out, 'trial.map'), encoding='utf-8'):
+            mb = re.match(r'ROM[0X] bank #(\d+):', l)
+            if mb: bank = int(mb.group(1))
             m = re.match(r'\s*SECTION: \$([0-9a-f]+)(?:-\$([0-9a-f]+))? \(\$([0-9a-f]+) bytes?\) \["(.+)"\]', l)
-            if m: secs.append((m.group(4), int(m.group(3), 16)))
+            if m:
+                secs.append((m.group(4), int(m.group(3), 16)))
+                where[m.group(4)] = (bank, int(m.group(1), 16), int(m.group(1), 16) + int(m.group(3), 16))
         fixed, banked = set(), {}
         for p in srcs:
             for l in open(p, encoding='utf-8'):
@@ -69,6 +73,13 @@ def build(k):
         # 2) the free space of this version, and where each floating section goes
         bd = open(base, 'rb').read()
         fr = {b: [st, en] for b, st, en, n in free(bd, 16) if b > 0}
+        # 決まった場所に置く所（大きな絵など）と重なるあきは、使わないようにする
+        for name in fixed:
+            if name not in where: continue
+            b, st, en = where[name]
+            if b in fr and st < fr[b][1] and en > fr[b][0]:
+                if st - fr[b][0] >= fr[b][1] - en: fr[b][1] = st
+                else: fr[b][0] = en
         script = {}
         for name, size in sorted(secs, key=lambda s: -s[1]):
             if name in fixed or name.startswith('s') and name[1:].isdigit() or size == 0: continue
