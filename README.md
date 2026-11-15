@@ -58,3 +58,13 @@ python3 tools/mkips.py build/v.gbc ポケットモンスターピカチュウフ
 ## そのほか
 - `reference/kit_sources_v350/`：Ver.3.50 で足した機能のソースを、作業の記録から取り出したものです。最初に書いた版なので、そのあとの手直しは入っていません。
 - `patches350/`：Ver.3.50 のリリースのパッチ（v1.0用。v1.1〜v1.3 にも当たる）。
+
+## サマービーチだけのゲーム（beach/）
+151匹そろう版・60fps版（xf）から、ピカチュウのサマービーチだけを取り出したゲームです。
+- 電源を入れると、すぐサマービーチ。おわったら（A ボタン）また はじめから。
+- ハイスコアを出したら自動でセーブ（SRAM バンク1 の $BF00。ふつうのセーブとは別の場所）。
+```
+python3 tools/build.py xf
+python3 tools/build_beach.py                 # → build/summer_beach.gbc
+python3 tools/mkips.py build/summer_beach.gbc ピカチュウのサマービーチ.ips   # v1.0〜v1.3 のどれに当てても同じ
+```
