@@ -74,8 +74,11 @@ intro = lambda t: vi[t * 16:t * 16 + 16]
 #   模様（背中の模様・しっぽの付け根など）＝それ以外 … 茶（パレット2＝白・黄・茶・黒）。黄のない部品の小さな水色はボードの一部なので水色のまま
 # 8×8 の部品は透明のほかに 3 色まで。部品の中に赤と茶が両方あるときは赤を優先し、その部品の模様は輪郭の色に。
 # 茶の部品に入るボードの点は透明（下の海はボードと同じ水色）。
+BOARDMODE = os.environ.get('BOARDMODE', 'A')   # A：ボードと付け根が同じ部品なら、ボードを優先（付け根はその部品だけ水色のまま）
 MOUTH = {1: {(13, 11)}, 2: {(13, 11)}, 3: {(12, 11)}, 4: {(12, 11)}, 5: {(11, 11)}, 6: {(11, 11)}, 7: {(11, 8)}, 8: {(11, 8)},
          9: {(12, 6)}, 10: {(12, 6)}, 15: {(12, 12)}, 17: {(13, 10)}, 18: {(12, 10)}}
+# f8 のボードの左の先（黄 2 点・水色 2 点）は輪郭をはさんでボードからはなれているので、ここで指定（24×24 の 行, 列）
+TIP_EXTRA = {8: {(19, 1), (19, 2), (20, 4), (20, 5)}}
 FREE = [0x5810 + 0x40 * i for i in range(40)]   # 3e:5804〜7ae9 はゲームボーイ版のオープニング（このロムでは通らない）。新しい組をここに置く
 assert all(b == 0 or True for b in rom[O(0x5804):O(0x7ae9)])
 def frame(f):
@@ -110,29 +113,62 @@ def classify(img, mouth):
     return cls
 plans = []   # (フレーム番号のならび, 組のバイト列)
 tile_fix = {}   # ROM の位置 -> 新しい 8×8
-def do_frame(f, src, src_rom, mouth_off):
+def comps_of(img, color):
+    seen = set(); out = []
+    for pnt, c in img.items():
+        if c != color or pnt in seen: continue
+        st = [pnt]; comp = []; seen.add(pnt)
+        while st:
+            y, x = st.pop(); comp.append((y, x))
+            for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                n = (y + dy, x + dx)
+                if img.get(n) == color and n not in seen: seen.add(n); st.append(n)
+        out.append(comp)
+    return out
+def touches(comp, cls, kind):
+    return any(cls.get((y + dy, x + dx)) == kind for y, x in comp for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+def do_frame(f, src, src_rom, mouth_off, tips=False):
     base, ptr, ents = frame(f)
     img, where_ = compose(base, ents, src)
     mo = {(y + mouth_off[0], x + mouth_off[1]) for (y, x) in MOUTH.get(f, set())}
     cls = classify(img, mo)
+    if tips:
+        for comp in comps_of(img, 2):   # ボードにくっつく小さな水色（模様と見えたもの）はボード
+            if cls[comp[0]] == 'pattern' and touches(comp, cls, 'board'):
+                for q_ in comp: cls[q_] = 'board'
+        for comp in comps_of(img, 1):   # ボードにくっつく小さな黄色（3 点まで）＝ボードの先 → 水色
+            if len(comp) <= 3 and touches(comp, cls, 'board'):
+                for q_ in comp: cls[q_] = 'boardtip'
+        for (y, x) in TIP_EXTRA.get(f, ()):   # 輪郭をはさんでボードからはなれているボードの先
+            q_ = (y - 12, x - 12)
+            cls[q_] = 'boardtip' if img[q_] == 1 else 'board'
     pals = []
     for k, (y, x, t, at) in enumerate(ents):
         tt = (base + t) & 0xff; p = dec(src(tt)); kinds = set()
         for pnt, (kk, sy, sx) in where_.items():
-            if kk == k and pnt in cls: kinds.add(cls[pnt])
+            if kk == k and pnt in cls and cls[pnt] != 'boardtip': kinds.add(cls[pnt])
+        tipcells = [(sy, sx) for pnt, (kk, sy, sx) in where_.items() if kk == k and cls.get(pnt) == 'boardtip']
         has_y = any(v == 1 for r in p for v in r)
         if not kinds - {'board'} or not has_y: pal = 0   # 黄のない部品（ボードだけの所）の小さな水色はボードの一部
         elif kinds & {'cheek', 'mouth'}: pal = 1
+        elif 'board' in kinds: pal = 0 if BOARDMODE == 'A' else 3   # ボードの中は水色でそろえる
         else: pal = 2
         pals.append(pal)
-        if pal == 0: continue
         q = [r[:] for r in p]
+        for sy, sx in tipcells:   # ボードの先の黄色 → ボードの水色（赤・茶の部品ではすき間＝下の海の水色）
+            q[sy][sx] = 2 if pal in (0, 3) else 0
+        if pal == 0:
+            if q != p:
+                h = src_rom + tt * 16
+                if h in tile_fix: assert tile_fix[h] == q
+                tile_fix[h] = q
+            continue
         for pnt, (kk, sy, sx) in where_.items():
             if kk != k or q[sy][sx] != 2: continue
             c = cls[pnt]
             if pal == 1: q[sy][sx] = 2 if c in ('cheek', 'mouth') else 3
             elif pal == 2: q[sy][sx] = 2 if c == 'pattern' else 0
-            else: q[sy][sx] = 1 if c == 'pattern' else 2
+            else: q[sy][sx] = 3 if c == 'pattern' else 2   # パレット3（黄・水色・茶）：付け根＝色3（茶）。この部品の輪郭も茶
         h = src_rom + tt * 16
         assert rom[h:h + 16] == src(tt), (f, hex(tt))
         if h in tile_fix: assert tile_fix[h] == q, f'f{f} タイル {tt:02x} がほかのポーズと食いちがう'
@@ -142,7 +178,7 @@ def do_frame(f, src, src_rom, mouth_off):
     return bytes(b)
 blocks = {}
 for f in list(range(1, 16)) + [17, 18]:
-    blocks.setdefault(do_frame(f, obj, OBJ_SRC, (-12, -12)), []).append(f)
+    blocks.setdefault(do_frame(f, obj, OBJ_SRC, (-12, -12), tips=True), []).append(f)
 for f in (32, 33, 34, 35):
     blocks.setdefault(do_frame(f, intro, INTRO_SRC, (0, 0)), []).append(f)
 for h, q in sorted(tile_fix.items()):
@@ -205,7 +241,7 @@ def rgb(r, g, b): v = r | g << 5 | b << 10; return bytes([v & 0xff, v >> 8])
 PAL = 0x6ef9
 emit(0x09, PAL + 0x14 * 8, rgb(31, 31, 31) + rgb(31, 31, 0) + rgb(31, 4, 4) + rgb(3, 3, 3), '色14：ほっぺ（白・黄・赤・こげ茶）')
 emit(0x09, PAL + 0x15 * 8, rgb(31, 31, 31) + rgb(31, 31, 0) + rgb(17, 9, 3) + rgb(3, 3, 3), '色15：模様（白・黄・茶・こげ茶）')
-emit(0x09, PAL + 0x16 * 8, rgb(24, 30, 31) + rgb(17, 9, 3) + rgb(11, 23, 31) + rgb(3, 3, 3), '色16：色0＝水しぶきの白っぽい水色（パレット7 の色1 になる）')
+emit(0x09, PAL + 0x16 * 8, rgb(24, 30, 31) + rgb(31, 31, 0) + rgb(11, 23, 31) + rgb(17, 9, 3), '色16：色0＝水しぶきの白っぽい水色（パレット7 の色1）、色1〜3＝黄・水色・茶（ボードと付け根が同じ部品）')
 # 背景パレット4 は色の表の 0F 番から（1c:67d0）。サマービーチでは画面に使われていないので、島とヤシの木に
 emit(0x09, PAL + 0x0f * 8, rgb(31, 31, 31) + rgb(30, 25, 13) + rgb(3, 17, 5) + rgb(15, 8, 3), '色0F（背景パレット4）：島とヤシの木（白・砂・緑・茶）')
 # PAL_SET：4 つの枠を ビーチ・14・15・16 に

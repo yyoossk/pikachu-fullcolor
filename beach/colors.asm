@@ -15,26 +15,26 @@ SECTION "beachcol_20_5301", ROMX[$5301], BANK[$20] ; 雲：輪郭を黒・中を
 SECTION "beachcol_20_4521", ROMX[$4521], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $7f, $40, $7f, $60, $7f, $63, $ff, $83, $ff, $30, $ee, $99, $fe, $81, $ff, $c0
 
+SECTION "beachcol_20_4541", ROMX[$4541], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $00, $00, $00, $00, $30, $30, $4d, $7d, $42, $7f, $21, $3f, $20, $3f, $10, $1f
+
 SECTION "beachcol_20_4551", ROMX[$4551], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $7f, $60, $ff, $e3, $ff, $83, $ff, $b0, $ee, $99, $fe, $41, $ff, $80, $ff, $c0
+	db $7f, $60, $ff, $e3, $ff, $83, $ff, $b0, $ee, $99, $7e, $41, $ff, $80, $ff, $c0
 
 SECTION "beachcol_20_4581", ROMX[$4581], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $ff, $e3, $ff, $83, $ff, $b0, $ee, $99, $fe, $41, $ff, $00, $ff, $00, $ff, $c0
 
-SECTION "beachcol_20_4661", ROMX[$4661], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $fc, $1c, $ee, $1e, $ca, $3e, $fc, $1c, $f8, $18, $60, $60, $20, $20, $c0, $c0
+SECTION "beachcol_20_4671", ROMX[$4671], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $7b, $7a, $87, $ff, $40, $7f, $30, $3f, $0c, $0f, $03, $03, $00, $00, $00, $00
 
-SECTION "beachcol_20_4681", ROMX[$4681], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $df, $20, $ff, $80, $7f, $78, $0f, $0f, $00, $00, $c0, $c0, $3c, $3c, $03, $03
+SECTION "beachcol_20_46a1", ROMX[$46a1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $07, $04, $0f, $08, $0f, $08, $7f, $7c, $83, $ff, $70, $7f, $0f, $0f, $00, $00
 
-SECTION "beachcol_20_4691", ROMX[$4691], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $ee, $1e, $ca, $3e, $fc, $1c, $f8, $18, $e0, $e0, $10, $10, $10, $10, $e0, $e0
+SECTION "beachcol_20_46d1", ROMX[$46d1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $1f, $18, $1f, $10, $1f, $10, $1f, $10, $1f, $18, $67, $7f, $80, $ff, $7f, $7f
 
-SECTION "beachcol_20_46b1", ROMX[$46b1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $ff, $00, $fe, $01, $ff, $00, $ff, $fc, $03, $03, $00, $00, $c0, $c0, $3f, $3f
-
-SECTION "beachcol_20_46c1", ROMX[$46c1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $6c, $fc, $50, $f0, $e0, $60, $f0, $70, $8e, $8e, $01, $01, $01, $01, $fe, $fe
+SECTION "beachcol_20_4831", ROMX[$4831], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $c0, $40, $e0, $20, $c0, $40, $e0, $e0, $50, $f0, $90, $f0, $20, $e0, $20, $e0
 
 SECTION "beachcol_20_4851", ROMX[$4851], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $ff, $0f, $ff, $0f, $ff, $0f, $ff, $03, $3f, $c3, $3f, $c7, $ff, $0f, $fe, $06
@@ -42,38 +42,32 @@ SECTION "beachcol_20_4851", ROMX[$4851], BANK[$20] ; ピカチュウ：ほっぺ
 SECTION "beachcol_20_4881", ROMX[$4881], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $7f, $40, $7f, $60, $7f, $63, $ff, $83, $ff, $30, $ee, $99, $fe, $81, $ff, $c0
 
+SECTION "beachcol_20_48a1", ROMX[$48a1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $00, $00, $00, $00, $30, $30, $4d, $7d, $42, $7f, $21, $3f, $20, $3f, $10, $1f
+
 SECTION "beachcol_20_48b1", ROMX[$48b1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $7f, $60, $ff, $e3, $ff, $83, $ff, $b0, $ee, $99, $fe, $41, $ff, $80, $ff, $c0
+	db $7f, $60, $ff, $e3, $ff, $83, $ff, $b0, $ee, $99, $7e, $41, $ff, $80, $ff, $c0
 
 SECTION "beachcol_20_48e1", ROMX[$48e1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $ff, $e3, $ff, $83, $ff, $b0, $ee, $99, $fe, $41, $ff, $00, $ff, $00, $ff, $c0
 
-SECTION "beachcol_20_4911", ROMX[$4911], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $7f, $44, $3e, $25, $3f, $38, $3f, $20, $1f, $19, $26, $26, $20, $20, $1f, $1f
-
-SECTION "beachcol_20_4921", ROMX[$4921], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $fe, $02, $fc, $0c, $73, $b3, $c2, $c2, $0c, $0c, $30, $30, $c0, $c0, $00, $00
-
-SECTION "beachcol_20_49c1", ROMX[$49c1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $fc, $1c, $ee, $1e, $ca, $3e, $fc, $1c, $f8, $18, $60, $60, $20, $20, $c0, $c0
-
-SECTION "beachcol_20_49e1", ROMX[$49e1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $df, $20, $ff, $80, $7f, $78, $0f, $0f, $00, $00, $c0, $c0, $3c, $3c, $03, $03
-
-SECTION "beachcol_20_49f1", ROMX[$49f1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $e8, $18, $cc, $3c, $f4, $1c, $f8, $18, $e0, $e0, $10, $10, $10, $10, $e0, $e0
+SECTION "beachcol_20_49d1", ROMX[$49d1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $7b, $7a, $87, $ff, $80, $ff, $60, $7f, $1c, $1f, $03, $03, $00, $00, $00, $00
 
 SECTION "beachcol_20_4b41", ROMX[$4b41], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $0f, $0c, $1f, $1c, $1f, $10, $1f, $16, $1d, $13, $3f, $28, $3f, $24, $3f, $24
 
+SECTION "beachcol_20_4b91", ROMX[$4b91], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $c0, $40, $e0, $20, $c0, $40, $e0, $e0, $50, $f0, $90, $f0, $20, $e0, $20, $e0
+
 SECTION "beachcol_20_4bb1", ROMX[$4bb1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $ff, $0f, $ff, $0f, $ff, $0f, $ff, $03, $3f, $c3, $3f, $c7, $ff, $0f, $fe, $06
 
-SECTION "beachcol_20_4c21", ROMX[$4c21], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $ff, $00, $fe, $01, $ff, $00, $ff, $fc, $03, $03, $00, $00, $f8, $f8, $07, $07
+SECTION "beachcol_20_4c11", ROMX[$4c11], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $03, $04, $0f, $08, $7f, $78, $8f, $fc, $73, $7f, $0f, $0f, $00, $00, $00, $00
 
-SECTION "beachcol_20_4c31", ROMX[$4c31], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
-	db $6e, $f2, $5c, $fc, $e0, $60, $e0, $60, $9c, $9c, $02, $02, $02, $02, $fc, $fc
+SECTION "beachcol_20_4c41", ROMX[$4c41], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
+	db $1f, $18, $1f, $10, $1f, $10, $1f, $10, $1f, $18, $67, $7f, $80, $ff, $7f, $7f
 
 SECTION "beachcol_20_5591", ROMX[$5591], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $0f, $08, $1f, $10, $1f, $14, $3f, $34, $3f, $20, $3e, $31, $3e, $29, $1f, $10
@@ -81,7 +75,7 @@ SECTION "beachcol_20_5591", ROMX[$5591], BANK[$20] ; ピカチュウ：ほっぺ
 SECTION "beachcol_20_55d1", ROMX[$55d1], BANK[$20] ; ピカチュウ：ほっぺ・口は赤、模様は茶の色番号に
 	db $0f, $0c, $1f, $10, $3f, $20, $3f, $28, $7f, $68, $7f, $40, $7c, $63, $7c, $53
 
-SECTION "beachcol_3e_5810", ROMX[$5810], BANK[$3e] ; ピカチュウの組（f1・f2・f3・f4）
+SECTION "beachcol_3e_5810", ROMX[$5810], BANK[$3e] ; ピカチュウの組（f1・f2）
 	db $09, $f4, $f4, $00, $00, $f4, $fc, $01, $00, $f4, $04, $02, $00, $fc, $f4, $10
 	db $00, $fc, $fc, $11, $01, $fc, $04, $12, $01, $04, $f4, $20, $00, $04, $fc, $21
 	db $00, $04, $04, $22, $02
@@ -92,16 +86,16 @@ SECTION "beachcol_3e_54d2", ROMX[$54d2], BANK[$3e] ; フレーム f1 → 3e:5810
 SECTION "beachcol_3e_54d5", ROMX[$54d5], BANK[$3e] ; フレーム f2 → 3e:5810
 	db $10, $58
 
-SECTION "beachcol_3e_54d8", ROMX[$54d8], BANK[$3e] ; フレーム f3 → 3e:5810
-	db $10, $58
-
-SECTION "beachcol_3e_54db", ROMX[$54db], BANK[$3e] ; フレーム f4 → 3e:5810
-	db $10, $58
-
-SECTION "beachcol_3e_5850", ROMX[$5850], BANK[$3e] ; ピカチュウの組（f5）
+SECTION "beachcol_3e_5850", ROMX[$5850], BANK[$3e] ; ピカチュウの組（f3・f4・f5）
 	db $09, $f4, $f4, $00, $00, $f4, $fc, $01, $00, $f4, $04, $02, $00, $fc, $f4, $10
 	db $00, $fc, $fc, $11, $01, $fc, $04, $12, $01, $04, $f4, $20, $00, $04, $fc, $21
-	db $02, $04, $04, $22, $02
+	db $00, $04, $04, $22, $00
+
+SECTION "beachcol_3e_54d8", ROMX[$54d8], BANK[$3e] ; フレーム f3 → 3e:5850
+	db $50, $58
+
+SECTION "beachcol_3e_54db", ROMX[$54db], BANK[$3e] ; フレーム f4 → 3e:5850
+	db $50, $58
 
 SECTION "beachcol_3e_54de", ROMX[$54de], BANK[$3e] ; フレーム f5 → 3e:5850
 	db $50, $58
@@ -109,7 +103,7 @@ SECTION "beachcol_3e_54de", ROMX[$54de], BANK[$3e] ; フレーム f5 → 3e:5850
 SECTION "beachcol_3e_5890", ROMX[$5890], BANK[$3e] ; ピカチュウの組（f6）
 	db $09, $f4, $f4, $00, $00, $f4, $fc, $01, $02, $f4, $04, $02, $00, $fc, $f4, $10
 	db $02, $fc, $fc, $11, $01, $fc, $04, $12, $01, $04, $f4, $20, $00, $04, $fc, $21
-	db $02, $04, $04, $22, $02
+	db $00, $04, $04, $22, $00
 
 SECTION "beachcol_3e_54e1", ROMX[$54e1], BANK[$3e] ; フレーム f6 → 3e:5890
 	db $90, $58
@@ -117,15 +111,15 @@ SECTION "beachcol_3e_54e1", ROMX[$54e1], BANK[$3e] ; フレーム f6 → 3e:5890
 SECTION "beachcol_3e_58d0", ROMX[$58d0], BANK[$3e] ; ピカチュウの組（f7）
 	db $09, $f4, $f4, $00, $00, $f4, $fc, $01, $00, $f4, $04, $02, $00, $fc, $f4, $10
 	db $00, $fc, $fc, $11, $01, $fc, $04, $12, $00, $04, $f4, $20, $00, $04, $fc, $21
-	db $02, $04, $04, $22, $02
+	db $00, $04, $04, $22, $00
 
 SECTION "beachcol_3e_54e4", ROMX[$54e4], BANK[$3e] ; フレーム f7 → 3e:58d0
 	db $d0, $58
 
 SECTION "beachcol_3e_5910", ROMX[$5910], BANK[$3e] ; ピカチュウの組（f8）
 	db $09, $f4, $f4, $00, $02, $f4, $fc, $01, $02, $f4, $04, $02, $00, $fc, $f4, $10
-	db $02, $fc, $fc, $11, $01, $fc, $04, $12, $00, $04, $f4, $20, $02, $04, $fc, $21
-	db $02, $04, $04, $22, $02
+	db $02, $fc, $fc, $11, $01, $fc, $04, $12, $00, $04, $f4, $20, $00, $04, $fc, $21
+	db $00, $04, $04, $22, $00
 
 SECTION "beachcol_3e_54e7", ROMX[$54e7], BANK[$3e] ; フレーム f8 → 3e:5910
 	db $10, $59
@@ -152,71 +146,66 @@ SECTION "beachcol_3e_5990", ROMX[$5990], BANK[$3e] ; ピカチュウの組（f10
 SECTION "beachcol_3e_54ed", ROMX[$54ed], BANK[$3e] ; フレーム f10 → 3e:5990
 	db $90, $59
 
-SECTION "beachcol_3e_59d0", ROMX[$59d0], BANK[$3e] ; ピカチュウの組（f11）
-	db $09, $f4, $f4, $00, $02, $f4, $fc, $01, $00, $f4, $04, $02, $00, $fc, $f4, $10
-	db $02, $fc, $fc, $11, $01, $fc, $04, $12, $00, $04, $f4, $20, $02, $04, $fc, $21
-	db $02, $04, $04, $22, $00
-
-SECTION "beachcol_3e_54f0", ROMX[$54f0], BANK[$3e] ; フレーム f11 → 3e:59d0
-	db $d0, $59
-
-SECTION "beachcol_3e_5a10", ROMX[$5a10], BANK[$3e] ; ピカチュウの組（f12・f13・f14）
+SECTION "beachcol_3e_59d0", ROMX[$59d0], BANK[$3e] ; ピカチュウの組（f11・f12・f13・f14）
 	db $09, $f4, $f4, $00, $02, $f4, $fc, $01, $00, $f4, $04, $02, $00, $fc, $f4, $10
 	db $02, $fc, $fc, $11, $01, $fc, $04, $12, $00, $04, $f4, $20, $00, $04, $fc, $21
 	db $00, $04, $04, $22, $00
 
-SECTION "beachcol_3e_54f3", ROMX[$54f3], BANK[$3e] ; フレーム f12 → 3e:5a10
-	db $10, $5a
+SECTION "beachcol_3e_54f0", ROMX[$54f0], BANK[$3e] ; フレーム f11 → 3e:59d0
+	db $d0, $59
 
-SECTION "beachcol_3e_54f6", ROMX[$54f6], BANK[$3e] ; フレーム f13 → 3e:5a10
-	db $10, $5a
+SECTION "beachcol_3e_54f3", ROMX[$54f3], BANK[$3e] ; フレーム f12 → 3e:59d0
+	db $d0, $59
 
-SECTION "beachcol_3e_54f9", ROMX[$54f9], BANK[$3e] ; フレーム f14 → 3e:5a10
-	db $10, $5a
+SECTION "beachcol_3e_54f6", ROMX[$54f6], BANK[$3e] ; フレーム f13 → 3e:59d0
+	db $d0, $59
 
-SECTION "beachcol_3e_5a50", ROMX[$5a50], BANK[$3e] ; ピカチュウの組（f15）
+SECTION "beachcol_3e_54f9", ROMX[$54f9], BANK[$3e] ; フレーム f14 → 3e:59d0
+	db $d0, $59
+
+SECTION "beachcol_3e_5a10", ROMX[$5a10], BANK[$3e] ; ピカチュウの組（f15）
 	db $09, $f4, $f4, $00, $00, $f4, $fc, $01, $00, $f4, $04, $02, $00, $fc, $f4, $10
 	db $01, $fc, $fc, $11, $01, $fc, $04, $12, $01, $04, $f4, $20, $00, $04, $fc, $21
 	db $00, $04, $04, $22, $00
 
-SECTION "beachcol_3e_54fc", ROMX[$54fc], BANK[$3e] ; フレーム f15 → 3e:5a50
-	db $50, $5a
+SECTION "beachcol_3e_54fc", ROMX[$54fc], BANK[$3e] ; フレーム f15 → 3e:5a10
+	db $10, $5a
 
-SECTION "beachcol_3e_5a90", ROMX[$5a90], BANK[$3e] ; ピカチュウの組（f32）
+SECTION "beachcol_3e_5a50", ROMX[$5a50], BANK[$3e] ; ピカチュウの組（f32）
 	db $0c, $f4, $f0, $03, $20, $f4, $f8, $02, $20, $f4, $00, $01, $20, $f4, $08, $00
 	db $22, $fc, $f0, $13, $22, $fc, $f8, $12, $20, $fc, $00, $11, $21, $fc, $08, $10
 	db $20, $04, $f0, $23, $22, $04, $f8, $22, $20, $04, $00, $21, $20, $04, $08, $20
 	db $20
 
-SECTION "beachcol_3e_552f", ROMX[$552f], BANK[$3e] ; フレーム f32 → 3e:5a90
-	db $90, $5a
+SECTION "beachcol_3e_552f", ROMX[$552f], BANK[$3e] ; フレーム f32 → 3e:5a50
+	db $50, $5a
 
-SECTION "beachcol_3e_5ad0", ROMX[$5ad0], BANK[$3e] ; ピカチュウの組（f33）
+SECTION "beachcol_3e_5a90", ROMX[$5a90], BANK[$3e] ; ピカチュウの組（f33）
 	db $0c, $f4, $f0, $03, $20, $f4, $f8, $02, $20, $f4, $00, $01, $20, $f4, $08, $00
 	db $22, $fc, $f0, $13, $22, $fc, $f8, $12, $20, $fc, $00, $11, $21, $fc, $08, $10
 	db $22, $04, $f0, $23, $20, $04, $f8, $22, $20, $04, $00, $21, $20, $04, $08, $20
 	db $20
 
-SECTION "beachcol_3e_5532", ROMX[$5532], BANK[$3e] ; フレーム f33 → 3e:5ad0
-	db $d0, $5a
+SECTION "beachcol_3e_5532", ROMX[$5532], BANK[$3e] ; フレーム f33 → 3e:5a90
+	db $90, $5a
 
-SECTION "beachcol_3e_5b10", ROMX[$5b10], BANK[$3e] ; ピカチュウの組（f34）
+SECTION "beachcol_3e_5ad0", ROMX[$5ad0], BANK[$3e] ; ピカチュウの組（f34）
 	db $0c, $f4, $f0, $03, $20, $f4, $f8, $02, $20, $f4, $00, $01, $20, $f4, $08, $00
 	db $22, $fc, $f0, $13, $20, $fc, $f8, $12, $22, $fc, $00, $11, $21, $fc, $08, $10
 	db $21, $04, $f0, $23, $20, $04, $f8, $22, $20, $04, $00, $21, $20, $04, $08, $20
 	db $20
 
-SECTION "beachcol_3e_5535", ROMX[$5535], BANK[$3e] ; フレーム f34 → 3e:5b10
-	db $10, $5b
+SECTION "beachcol_3e_5535", ROMX[$5535], BANK[$3e] ; フレーム f34 → 3e:5ad0
+	db $d0, $5a
 
-SECTION "beachcol_3e_5b50", ROMX[$5b50], BANK[$3e] ; ピカチュウの組（f35）
+SECTION "beachcol_3e_5b10", ROMX[$5b10], BANK[$3e] ; ピカチュウの組（f35）
 	db $0c, $f4, $f0, $03, $20, $f4, $f8, $02, $20, $f4, $00, $01, $20, $f4, $08, $00
 	db $20, $fc, $f0, $13, $20, $fc, $f8, $12, $22, $fc, $00, $11, $20, $fc, $08, $10
 	db $21, $04, $f0, $23, $20, $04, $f8, $22, $20, $04, $00, $21, $20, $04, $08, $20
 	db $20
 
-SECTION "beachcol_3e_5538", ROMX[$5538], BANK[$3e] ; フレーム f35 → 3e:5b50
-	db $50, $5b
+SECTION "beachcol_3e_5538", ROMX[$5538], BANK[$3e] ; フレーム f35 → 3e:5b10
+	db $10, $5b
 
 SECTION "beachcol_20_4ce1", ROMX[$4ce1], BANK[$20] ; サーフボード：中の黄色をなくす (VRAM タイル $8d)
 	db $ff, $00, $ff, $00, $ff, $00, $ff, $ff, $80, $ff, $00, $ff, $00, $ff, $ff, $ff
@@ -267,8 +256,8 @@ SECTION "beachcol_09_6f99", ROMX[$6f99], BANK[$09] ; 色14：ほっぺ（白・�
 SECTION "beachcol_09_6fa1", ROMX[$6fa1], BANK[$09] ; 色15：模様（白・黄・茶・こげ茶）
 	db $ff, $7f, $ff, $03, $31, $0d, $63, $0c
 
-SECTION "beachcol_09_6fa9", ROMX[$6fa9], BANK[$09] ; 色16：色0＝水しぶきの白っぽい水色（パレット7 の色1 になる）
-	db $d8, $7f, $31, $0d, $eb, $7e, $63, $0c
+SECTION "beachcol_09_6fa9", ROMX[$6fa9], BANK[$09] ; 色16：色0＝水しぶきの白っぽい水色（パレット7 の色1）、色1〜3＝黄・水色・茶（ボードと付け根が同じ部品）
+	db $d8, $7f, $ff, $03, $eb, $7e, $31, $0d
 
 SECTION "beachcol_09_6f71", ROMX[$6f71], BANK[$09] ; 色0F（背景パレット4）：島とヤシの木（白・砂・緑・茶）
 	db $ff, $7f, $3e, $37, $23, $16, $0f, $0d
