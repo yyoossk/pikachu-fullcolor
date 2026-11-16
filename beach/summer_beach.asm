@@ -2,6 +2,7 @@
 ;  ・電源を入れると、ゲームフリークのオープニング・タイトルをとばして、すぐサマービーチがはじまる
 ;  ・おわったら（A ボタン）、またサマービーチの はじめの画面から
 ;  ・ハイスコアを出したら、自動でセーブ（SRAM バンク1 の おわりの方。ふつうのセーブデータとは 別の場所）
+;  ・SELECT で、今のプレイをやめて はじめからやり直す
 ;  ・なみのりピカチュウ（さいしょのピカチュウ・なみのり おぼえ）が手持ちにいることにして、ピカチュウの声も出す
 ;  python3 tools/build_beach.py で build/summer_beach.gbc を作る（土台は build/xf.gbc）
 
@@ -13,6 +14,15 @@ SECTION "BeachBootHook", ROM0[$1dc1]
 	ld b, BANK(SummerBeachMain)
 	ld hl, SummerBeachMain
 	jp Bankswitch
+
+; SELECT で 今のプレイをやめて、さいしょからやり直す（もとは 2回目からしか きかない）
+; 毎コマの かかる時間を もとと同じにして（11 サイクル）、波のならび（乱数）を変えない
+SECTION "BeachSelectRestart", ROMX[$40a7], BANK[$3e]
+	ldh a, [hJoyPressed]
+	and PAD_SELECT
+	nop
+	nop
+	ret
 
 DEF SurfingPikachuMinigame_BlankPals EQU $521b ; ハックでは 名前がない所
 
