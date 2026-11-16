@@ -1,19 +1,29 @@
-; はじめの画面（タイトルと説明）の左上に、これまでのスコアの上位 5 つを高い順に出す
+; はじめの画面（タイトルと説明）に「スコア／セレクト」の文字を出し、SELECT で 説明の箱を広げて
+; これまでのスコアの上位 5 つを 1 位から出す（A・B・SELECT でとじる）
 ;  ・SRAM バンク1 の $BF08〜: "SR" + スコア 5 つ（2 バイト BCD、下の桁が先） + チェック 1 バイト
 ;  ・前のセーブ（ハイスコアだけ）があれば、それを 1 位にする
 ;  ・さいごまで遊んで結果が出た回だけ記録（とちゅうで SELECT・ゲームオーバーは記録しない）
 ;  ・文字の絵は、つぎの回の前（画面が出ている間）に HDMA で VRAM $9200 へ。画面の文字は、はじめの画面の
-;    1 コマめの待ちの前に wTileMap へ書く。どちらも次のコマを待つ前にすむので、波のならび（乱数）は変わらない
+;    1 コマめの待ちの前に wTileMap へ書く。どちらも次のコマを待つ前にすむので、スコアを開かなければ
+;    波のならび（乱数）は前と同じ
+;  ・開いている間は ピカチュウの動き（はじめの画面のおわりまでの時間）を止めて、ピカチュウを消す
 
 DEF sBeachRank   EQU $bf08
-DEF RANK_TILE    EQU $20 ; 0〜9 が $20〜$29、ー が $2a、ハイスコア が $2b〜$2f
+DEF RANK_TILE    EQU $20 ; 0〜9 が $20〜$29、ー が $2a、スコア が $2b〜$2d、セレクト が $2e〜$31
 DEF RANK_BAR     EQU RANK_TILE + 10
-DEF RANK_HEADER  EQU RANK_TILE + 11
+DEF RANK_SCORE   EQU RANK_TILE + 11
+DEF RANK_SELECT  EQU RANK_TILE + 14
 DEF RANK_BLANK   EQU $ff ; はじめの画面の 白いタイル
+DEF BEACH_SCORE_OPEN EQU 7 ; wd492 の このビット：スコアの箱を開いている
+DEF Joypad EQU $01ab
 
 ; はじめの画面：自動の BG 転送を入れたあとの 1 つめの DelayFrame のかわり
 SECTION "BeachRankIntroHook", ROMX[$5016], BANK[$3e]
-	call BeachIntroDrawRank
+	call BeachIntroDrawLabel
+
+; はじめの画面の 毎コマ：RunObjectAnimations のかわり
+SECTION "BeachRankIntroLoop", ROMX[$5048], BANK[$3e]
+	call BeachIntroFrame
 
 SECTION "BeachRank", ROMX[$6000], BANK[$3e]
 ; 起動したとき。ランキングがまだなければ作る（前のハイスコアを 1 位に）
@@ -128,9 +138,9 @@ BeachRankLoadTiles::
 	ldh [rHDMA4], a
 	ldh a, [rLCDC]
 	add a
-	ld a, 16 - 1
+	ld a, 18 - 1
 	jr nc, .go ; 画面が消えているときは いっぺんに
-	or $80     ; 出ているときは 1 行の すきまごとに 16 バイト
+	or $80     ; 出ているときは 1 行の すきまごとに 16 バイト（18 回）
 .go
 	ldh [rHDMA5], a
 .wait
@@ -141,43 +151,77 @@ BeachRankLoadTiles::
 	ldh [rVBK], a
 	ret
 
-; はじめの画面の左上（6×6）に ランキングを書いて、DelayFrame へ
-BeachIntroDrawRank:
-	; タイトル（上の 6 行の 6〜18 列）を 1 列 右へずらして、ランキングとの間をあける
-	ld hl, wTileMap + 18
-	ld c, 6
-.shift_row
-	push hl
-	ld b, 13
-.shift
-	ld a, [hli]
-	ld [hld], a
-	dec hl
-	dec b
-	jr nz, .shift
-	inc hl
-	ld [hl], RANK_BLANK
-	pop hl
-	ld de, SCREEN_WIDTH
-	add hl, de
-	dec c
-	jr nz, .shift_row
-	call BeachEnableSRAM
-	ld hl, wTileMap
-	ld a, RANK_HEADER
-	ld b, 5
-.header
+; タイトルの左に「スコア」「セレクト」を書いて、DelayFrame へ
+BeachIntroDrawLabel:
+	call BeachDrawScoreLabel
+	jp DelayFrame
+
+BeachDrawScoreLabel:
+	ld hl, wTileMap + SCREEN_WIDTH * 1 + 1
+	ld a, RANK_SCORE
+	ld b, 3
+.score
 	ld [hli], a
 	inc a
 	dec b
-	jr nz, .header
+	jr nz, .score
+	ld hl, wTileMap + SCREEN_WIDTH * 2 + 1
+	ld b, 4
+.select
+	ld [hli], a
+	inc a
+	dec b
+	jr nz, .select
+	ret
+
+; はじめの画面の 毎コマ
+BeachIntroFrame:
+	call Joypad
+	ld hl, wd492
+	bit BEACH_SCORE_OPEN, [hl]
+	jr nz, .open
+	ldh a, [hJoyPressed]
+	and PAD_SELECT
+	jp z, RunObjectAnimations
+	set BEACH_SCORE_OPEN, [hl]
+	call ClearSprites
+	jp BeachDrawScoreBox
+.open
+	ldh a, [hJoyPressed]
+	and PAD_A | PAD_B | PAD_SELECT
+	ret z
+	res BEACH_SCORE_OPEN, [hl]
+	call DrawSurfingPikachuMinigameIntroBackground
+	call BeachDrawScoreLabel
+	jp RunObjectAnimations
+
+; 説明の箱を 下へ広げて（6〜12 行・1〜18 列）、中に 1 位から 5 位までを書く
+BeachDrawScoreBox:
+	ld hl, wTileMap + SCREEN_WIDTH * 6 + 1
+	lb de, $00, $01
+	ld a, $05
+	call .Row
+	ld c, 5
+.middle
+	push bc
+	lb de, $04, $04
+	ld a, RANK_BLANK
+	call .Row
+	pop bc
+	dec c
+	jr nz, .middle
+	lb de, $02, $03
+	ld a, $05
+	call .Row
+	call BeachEnableSRAM
 	ld de, sBeachRank + 2
-	ld hl, wTileMap + SCREEN_WIDTH
+	ld hl, wTileMap + SCREEN_WIDTH * 7 + 6
 	ld b, RANK_TILE + 1
 .entry
 	push hl
 	ld a, b
 	ld [hli], a
+	inc hl
 	inc hl
 	ld a, [de]
 	ld c, a
@@ -220,8 +264,21 @@ BeachIntroDrawRank:
 	ld a, b
 	cp RANK_TILE + 6
 	jr nz, .entry
-	call BeachDisableSRAM
-	jp DelayFrame
+	jp BeachDisableSRAM
+
+; 1 行：d（左はし）、a × 16、e（右はし）。hl は次の行の 同じ列へ
+.Row:
+	ld [hl], d
+	inc hl
+	ld b, 16
+.fill
+	ld [hli], a
+	dec b
+	jr nz, .fill
+	ld [hl], e
+	ld bc, SCREEN_WIDTH - 17
+	add hl, bc
+	ret
 
 ; a の下 4 ビットを 1 けた書く（上の 0 は白、e が 0 でないあとは 0 も書く）
 .Digit:
