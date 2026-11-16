@@ -68,3 +68,18 @@ python3 tools/build.py xf
 python3 tools/build_beach.py                 # → build/summer_beach.gbc
 python3 tools/mkips.py build/summer_beach.gbc ピカチュウのサマービーチ.ips   # v1.0〜v1.3 のどれに当てても同じ
 ```
+### 要らない部分を消して小さくする（128KB）
+```
+# 1) 遊んで、読まれた場所を記録（12通り）
+for s in $(seq 1 12); do python3 tests/beach/cov.py build/summer_beach.gbc /tmp/cov/c$s.bin $s & done; wait
+python3 -c "import numpy as np; c=np.zeros(0x100000,np.uint8)
+for s in range(1,13): c|=np.fromfile(f'/tmp/cov/c{s}.bin',np.uint8)
+np.save('/tmp/cov/c.npy',c)"
+# 2) 詰め直す → build/summer_beach_small.gbc（.map.txt にバンクの置き場所）
+python3 tools/shrink_beach.py /tmp/cov/c.npy
+# 3) パッチ（EOF のあとに大きさ 3 バイト＝切りつめ。対応していない道具でも、先頭 128KB は同じで動く）
+python3 tools/mkips.py build/summer_beach_small.gbc ピカチュウのサマービーチ.ips
+```
+- 残すもの：バンク0 まるごと、実際に読まれた所（前後 16 バイト）、実行された命令から飛び先をたどって届くプログラム。消した所は $FF。
+- アドレスが重ならないバンクどうしを 1 つのバンクにまとめ、ld [$2000], a はすべて「論理バンク→実際のバンク」の表を引くルーチン経由にする。
+- 確かめ方：tests/beach/README.md（小さい ROM で、消した所を一度も読まないこと・1MB 版と同じ画面になること）

@@ -7,6 +7,8 @@ static GB_gameboy_t *gb; static int wlo=-1,whi=-1; static FILE*wlog;
 static bool wcb(GB_gameboy_t*g,uint16_t a,uint8_t d){ if(a>=wlo&&a<=whi&&wlog){ fprintf(wlog,"%04x %02x pc=%04x bank=%02x\n",a,d,g->pc,g->mbc_rom_bank); } return true; }
  static uint32_t px[256*224]; static int vbl;
 static FILE *vrec=NULL, *arec=NULL;
+static uint8_t cov[0x800000];
+static uint8_t rcb(GB_gameboy_t*g,uint16_t a,uint8_t d){ uint8_t v=((uint16_t)(a+1)==g->pc)?3:1; if(a<0x4000) cov[a]|=v; else if(a<0x8000) cov[(size_t)g->mbc_rom_bank*0x4000+(a-0x4000)]|=v; return d; }
 static void vblank(GB_gameboy_t *g, GB_vblank_type_t t){ vbl=1;
   if(vrec){ for(int i=0;i<160*144;i++){uint8_t c[3]={px[i]>>16,px[i]>>8,px[i]}; fwrite(c,1,3,vrec);} } }
 static void sample(GB_gameboy_t *g, GB_sample_t *smp){ if(arec) fwrite(smp,4,1,arec); }
@@ -30,6 +32,8 @@ int main(int argc,char**argv){
   while(fgets(line,sizeof line,stdin)){
     char cmd[64]={0}, a[256]={0}; int n=0;  sscanf(line,"%63s %255s %d",cmd,a,&n);
     if(!strcmp(cmd,"watch")){ wlo=strtoul(a,0,16); whi=wlo+(n?n:1)-1; if(!wlog) wlog=fopen(getenv("GBWATCHLOG")?getenv("GBWATCHLOG"):"watch.log","w"); GB_set_write_memory_callback(gb,wcb); }
+    else if(!strcmp(cmd,"cov")){ GB_set_read_memory_callback(gb, atoi(a)? rcb : NULL); }
+    else if(!strcmp(cmd,"covsave")){ FILE*f=fopen(a,"wb"); fwrite(cov,1,n?n*0x4000:0x100000,f); fclose(f); fprintf(stdout,"covsaved\n"); }
     else if(!strcmp(cmd,"wmark")){ if(wlog){fprintf(wlog,"MARK %s\n",a); fflush(wlog);} }
     else if(!strcmp(cmd,"wflush")){ if(wlog) fflush(wlog); }
     else if(!strcmp(cmd,"wait")) frames(atoi(a));

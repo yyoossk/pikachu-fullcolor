@@ -5,3 +5,7 @@
 - cry.py a|b … 結果の画面でピカチュウの声が鳴るか
 - pals.py … 場面ごとの GBC パレット
 - misc.py gameover|ffsav|notbest|rounds|reset|select … ゲームオーバー・まっさらな SRAM・ベストでない時・5回続けて・ソフトリセット・SELECT
+- cov.py ROM 出力.bin SEED … 遊んで、読まれた ROM の場所を記録（sameboy-harness の cov / covsave）
+- cmp_small.py SEED フレーム数 出力 [ROM_A ROM_B] … 小さい ROM と 1MB 版を同じ操作で比べる
+- cmp_noinput.py 出力 ROM_A ROM_B … ボタンなしで 1 回分を通して比べる（乱数を固定した試験用コピー test_*_det.gbc で）
+- BEACH_ROM=summer_beach_small.gbc で misc.py・cry.py（CRY_BANK=04）・pals.py・full.py を小さい ROM に向けられる

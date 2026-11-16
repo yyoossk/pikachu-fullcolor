@@ -3,7 +3,7 @@ from gr import GR
 from cmp import sync, R
 out={}
 for which in 'ab':
-    g = GR(R+'summer_beach.gbc') if which=='a' else GR(R+'xf.gbc', state='/tmp/cmp/talk.st')
+    g = GR(R+os.environ.get('BEACH_ROM','summer_beach.gbc')) if which=='a' else GR(R+'xf.gbc', state='/tmp/cmp/talk.st')
     if which=='a': g.wait(60)
     # はじめの画面（イントロ）
     for i in range(400):

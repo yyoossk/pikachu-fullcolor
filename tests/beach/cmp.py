@@ -10,7 +10,7 @@ def sync(g, want=1, limit=3000):
     raise SystemExit('no sync')
 def align(g):
     # 比べるためだけに、乱数・DIV・3フレームごとの入力の位相をそろえる
-    g.poke(0xffd3,0); g.poke(0xffd4,0); g.poke(0xffd5,0); g.poke(0xff04,0)
+    g.poke(0xffd3,0); g.poke(0xffd4,0); g.poke(0xffd5,0); g.poke(0xff04,0); g.poke(0xd0ff,0)
 def script(seed, n):
     rnd=random.Random(seed); ev=[]; t=0
     while t<n:
@@ -28,7 +28,7 @@ def play(g, name, seed, frames):
     g.stop()
 if __name__=='__main__':
     seed=int(sys.argv[1]); frames=int(sys.argv[2]); out=sys.argv[3]
-    a=GR(R+'summer_beach.gbc'); a.wait(60); ia=sync(a)
+    a=GR(R+os.environ.get('BEACH_ROM','summer_beach.gbc')); a.wait(60); ia=sync(a)
     b=GR(R+'xf.gbc', state='/tmp/cmp/talk.st'); ib=sync(b)
     if '--align' in sys.argv: align(a); align(b)
     play(a, out+'_a', seed, frames); play(b, out+'_b', seed, frames)

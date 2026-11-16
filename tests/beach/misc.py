@@ -2,7 +2,7 @@ import os, sys, os; sys.path.insert(0,os.path.join(os.path.dirname(os.path.abspa
 from gr import GR
 from cmp import sync, R
 def A(sav=None):
-    g=GR(R+'summer_beach.gbc', sav=sav); g.wait(60); return g
+    g=GR(R+os.environ.get('BEACH_ROM','summer_beach.gbc'), sav=sav); g.wait(60); return g
 def finish(g, limit=20000):
     # 何も押さずに結果まで、そのあと A
     sync(g,11,limit); g.wait(30); g.shot('/tmp/cmp/m_res.png'); g.press('A',4,10)

@@ -3,7 +3,7 @@ import os, sys; sys.path.insert(0,os.path.join(os.path.dirname(os.path.abspath(_
 from gr import GR
 from cmp import sync, script, R
 which, out, seed = sys.argv[1], sys.argv[2], int(sys.argv[3])
-g = GR(R+'summer_beach.gbc', sav=(sys.argv[4] if len(sys.argv)>4 else None)) if which=='a' else GR(R+'xf.gbc', state='/tmp/cmp/talk.st')
+g = GR(R+os.environ.get('BEACH_ROM','summer_beach.gbc'), sav=(sys.argv[4] if len(sys.argv)>4 else None)) if which=='a' else GR(R+'xf.gbc', state='/tmp/cmp/talk.st')
 if which=='a': g.wait(60)
 sync(g)
 g.rec(out); tl=[]; f=0; prev=None; ev=script(seed, 20000); ei=0
