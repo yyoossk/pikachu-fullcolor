@@ -2,6 +2,7 @@
 ;  ・電源を入れると、ゲームフリークのオープニング・タイトルをとばして、すぐサマービーチがはじまる
 ;  ・おわったら（A ボタン）、またサマービーチの はじめの画面から
 ;  ・ハイスコアを出したら、自動でセーブ（SRAM バンク1 の おわりの方。ふつうのセーブデータとは 別の場所）
+;  ・はじめの画面の左上に、これまでのスコアの上位 5 つ（rank.asm）
 ;  ・SELECT で、今のプレイをやめて はじめからやり直す
 ;  ・なみのりピカチュウ（さいしょのピカチュウ・なみのり おぼえ）が手持ちにいることにして、ピカチュウの声も出す
 ;  python3 tools/build_beach.py で build/summer_beach.gbc を作る（土台は build/xf.gbc）
@@ -40,11 +41,13 @@ SummerBeachMain:
 	ld a, SURF
 	ld [wPartyMon1Moves], a
 	call BeachLoadHiScore
+	call BeachRankInit
 .round
 	xor a
-	ld [wd492], a ; SELECT でやめない
+	ld [wd492], a ; SELECT は BeachSelectRestart で いつでも やり直し
 	call SurfingPikachuMinigame_BlankPals
 	call DelayFrame
+	call BeachRankLoadTiles ; ランキングの文字の絵
 	call DelayFrame
 	call DelayFrame
 	xor a
@@ -62,6 +65,7 @@ SummerBeachMain:
 	call SurfingPikachuMinigameIntro
 	call SurfingPikachuLoop
 	call BeachSaveIfHigher
+	call BeachRankRecord
 	; つぎの回の前に、画面のわりこみ（波のゆれ）を止めて、画面をけす
 	xor a
 	ldh [hLCDCPointer], a
@@ -121,13 +125,13 @@ BeachSaveIfHigher:
 	cpl
 	ld [hl], a
 	; fallthrough
-BeachDisableSRAM:
+BeachDisableSRAM::
 	xor a
 	ld [rRAMB], a
 	ld [rRAMG], a
 	ret
 
-BeachEnableSRAM:
+BeachEnableSRAM::
 	ld a, RAMG_SRAM_ENABLE
 	ld [rRAMG], a
 	ld a, BEACH_SAVE_BANK
