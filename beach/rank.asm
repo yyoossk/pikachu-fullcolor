@@ -1,19 +1,26 @@
-; はじめの画面（タイトルと説明）に「スコア／セレクト」の文字を出し、SELECT で 説明の箱を広げて
-; これまでのスコアの上位 5 つを 1 位から出す（A・B・SELECT でとじる）
+; タイトル（はじめの画面）の箱の中を「スタート」「スコア」のメニューにする（十字キーの上下でえらび、A か START で決める）
+;  ・スタート：すぐゲームへ（えらぶまでは、ピカチュウが右へ泳ぐのをくりかえして待つ）
+;  ・スコア：箱を下へ広げて、これまでのスコアの上位 5 つを 1 位から出す（A・B・START・SELECT でメニューにもどる。
+;    開いている間はピカチュウを止めて消す）
 ;  ・SRAM バンク1 の $BF08〜: "SR" + スコア 5 つ（2 バイト BCD、下の桁が先） + チェック 1 バイト
 ;  ・前のセーブ（ハイスコアだけ）があれば、それを 1 位にする
 ;  ・さいごまで遊んで結果が出た回だけ記録（とちゅうで SELECT・ゲームオーバーは記録しない）
-;  ・文字の絵は、つぎの回の前（画面が出ている間）に HDMA で VRAM $9200 へ。画面の文字は、はじめの画面の
-;    1 コマめの待ちの前に wTileMap へ書く。どちらも次のコマを待つ前にすむので、スコアを開かなければ
-;    波のならび（乱数）は前と同じ
-;  ・開いている間は ピカチュウの動き（はじめの画面のおわりまでの時間）を止めて、ピカチュウを消す
+;  ・文字の絵は、つぎの回の前（画面が出ている間）に HDMA で VRAM $9200 へ
+;  ・ゲームが始まるのは スタートをえらんだとき なので、波のならびは えらんだときで変わる（もとのゲームで
+;    おじいさんに話しかけたときと同じ）
 
 DEF sBeachRank   EQU $bf08
-DEF RANK_TILE    EQU $20 ; 0〜9 が $20〜$29、ー が $2a、スコア が $2b〜$2d、セレクト が $2e〜$31
+DEF RANK_TILE    EQU $20 ; 0〜9 が $20〜$29、ー $2a、ス $2b、コ $2c、ア $2d、タ $2e、ト $2f、▶ $30
 DEF RANK_BAR     EQU RANK_TILE + 10
-DEF RANK_SCORE   EQU RANK_TILE + 11
-DEF RANK_SELECT  EQU RANK_TILE + 14
+DEF T_SU         EQU RANK_TILE + 11
+DEF T_KO         EQU RANK_TILE + 12
+DEF T_A          EQU RANK_TILE + 13
+DEF T_TA         EQU RANK_TILE + 14
+DEF T_TO         EQU RANK_TILE + 15
+DEF T_CURSOR     EQU RANK_TILE + 16
 DEF RANK_BLANK   EQU $ff ; はじめの画面の 白いタイル
+DEF MENU_COL     EQU 7   ; ▶ の列（文字はその右）
+DEF BEACH_CURSOR     EQU 6 ; wd492 の このビット：▶ が「スコア」
 DEF BEACH_SCORE_OPEN EQU 7 ; wd492 の このビット：スコアの箱を開いている
 DEF Joypad EQU $01ab
 
@@ -138,9 +145,9 @@ BeachRankLoadTiles::
 	ldh [rHDMA4], a
 	ldh a, [rLCDC]
 	add a
-	ld a, 18 - 1
+	ld a, 17 - 1
 	jr nc, .go ; 画面が消えているときは いっぺんに
-	or $80     ; 出ているときは 1 行の すきまごとに 16 バイト（18 回）
+	or $80     ; 出ているときは 1 行の すきまごとに 16 バイト（17 回）
 .go
 	ldh [rHDMA5], a
 .wait
@@ -151,49 +158,106 @@ BeachRankLoadTiles::
 	ldh [rVBK], a
 	ret
 
-; タイトルの左に「スコア」「セレクト」を書いて、DelayFrame へ
+; 箱の中をメニューにして、DelayFrame へ
 BeachIntroDrawLabel:
-	call BeachDrawScoreLabel
+	call BeachDrawMenu
 	jp DelayFrame
 
-BeachDrawScoreLabel:
-	ld hl, wTileMap + SCREEN_WIDTH * 1 + 1
-	ld a, RANK_SCORE
-	ld b, 3
-.score
+; 箱の中（7〜9 行・2〜17 列）をけして、「スタート」「スコア」と ▶ を書く
+BeachDrawMenu:
+	ld hl, wTileMap + SCREEN_WIDTH * 7 + 2
+	ld c, 3
+.clear_row
+	ld b, 16
+	ld a, RANK_BLANK
+.clear
 	ld [hli], a
-	inc a
 	dec b
-	jr nz, .score
-	ld hl, wTileMap + SCREEN_WIDTH * 2 + 1
-	ld b, 4
-.select
+	jr nz, .clear
+	ld de, SCREEN_WIDTH - 16
+	add hl, de
+	dec c
+	jr nz, .clear_row
+	ld hl, wTileMap + SCREEN_WIDTH * 7 + MENU_COL + 1
+	ld a, T_SU
 	ld [hli], a
-	inc a
-	dec b
-	jr nz, .select
+	ld a, T_TA
+	ld [hli], a
+	ld a, RANK_BAR
+	ld [hli], a
+	ld [hl], T_TO
+	ld hl, wTileMap + SCREEN_WIDTH * 9 + MENU_COL + 1
+	ld a, T_SU
+	ld [hli], a
+	ld a, T_KO
+	ld [hli], a
+	ld [hl], T_A
+	; fallthrough
+BeachDrawCursor:
+	ld hl, wTileMap + SCREEN_WIDTH * 7 + MENU_COL
+	ld de, wTileMap + SCREEN_WIDTH * 9 + MENU_COL
+	ld a, [wd492]
+	bit BEACH_CURSOR, a
+	jr z, .put
+	push hl
+	ld h, d
+	ld l, e
+	pop de
+.put
+	ld [hl], T_CURSOR
+	ld a, RANK_BLANK
+	ld [de], a
 	ret
 
-; はじめの画面の 毎コマ
+; はじめの画面の 毎コマ（RunObjectAnimations のかわり）
 BeachIntroFrame:
 	call Joypad
 	ld hl, wd492
 	bit BEACH_SCORE_OPEN, [hl]
 	jr nz, .open
 	ldh a, [hJoyPressed]
-	and PAD_SELECT
-	jp z, RunObjectAnimations
+	ld b, a
+	and PAD_UP | PAD_DOWN
+	jr z, .no_move
+	ld a, [hl]
+	xor 1 << BEACH_CURSOR
+	ld [hl], a
+	push bc
+	call BeachDrawCursor
+	pop bc
+	ld hl, wd492
+.no_move
+	ld a, b
+	and PAD_A | PAD_START
+	jr z, .animate
+	bit BEACH_CURSOR, [hl]
+	jr nz, .score
+	; スタート：つぎにループの頭へもどったときに、はじめの画面がおわる
+	ld a, 1
+	ld [wSurfingMinigameIntroAnimationFinished], a
+	ret
+.score
 	set BEACH_SCORE_OPEN, [hl]
 	call ClearSprites
 	jp BeachDrawScoreBox
 .open
 	ldh a, [hJoyPressed]
-	and PAD_A | PAD_B | PAD_SELECT
+	and PAD_A | PAD_B | PAD_START | PAD_SELECT
 	ret z
 	res BEACH_SCORE_OPEN, [hl]
 	call DrawSurfingPikachuMinigameIntroBackground
-	call BeachDrawScoreLabel
-	jp RunObjectAnimations
+	call BeachDrawMenu
+.animate
+	call RunObjectAnimations
+	ld a, [wSurfingMinigameIntroAnimationFinished]
+	and a
+	ret z
+	; ピカチュウが右はしまで泳いだ → まだえらんでいないので、はじめの場所からもう一度
+	xor a
+	ld [wSurfingMinigameIntroAnimationFinished], a
+	ld a, $c
+	lb de, $74, $58 ; はじめと同じ場所から
+	jp SpawnAnimatedObject
 
 ; 説明の箱を 下へ広げて（6〜12 行・1〜18 列）、中に 1 位から 5 位までを書く
 BeachDrawScoreBox:
