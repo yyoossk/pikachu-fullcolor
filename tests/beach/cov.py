@@ -4,7 +4,7 @@ from gr import GR
 from cmp import sync, script
 rom=sys.argv[1]; out=sys.argv[2]; seed=int(sys.argv[3])
 g=GR(rom); g.cmd('cov 1')
-if len(sys.argv)>4: g.cmd('watch 0 32768')
+if len(sys.argv)>4: g.cmd('watch 2000 8192')
 g.wait(60)
 def play(seed, frames):
     t=0

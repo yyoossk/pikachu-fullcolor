@@ -49,6 +49,8 @@ for i in starts:
     b = i // 0x4000; a = i if b == 0 else 0x4000 + (i - b * 0x4000)
     work.append((b, a, (b if b else None), {}))   # (この命令のあるバンク, アドレス, ROMX に今出ているバンク, レジスタの定数)
 seen = set()
+farsrc = set()   # (バンク番号, その番号が書いてある ROM 上の位置)
+FAR_A = {0x15a4, 0x15b7, 0x15e0, 0x1618, 0x1650, 0x166b, 0x3e7d}   # a にバンク番号を入れて呼ぶもの
 sites = set()   # ld [$2000-$3fff], a のある場所（ROM 上の位置）
 while work:
     b, a, cur, st = work.pop()
@@ -70,7 +72,7 @@ while work:
         # 定数のレジスタを追う
         mm = re.match(r'ld (a|b|c|d|e|h|l), \$([0-9a-f]{2})$', t)
         m16 = re.match(r'ld (bc|de|hl), \$([0-9a-f]{4})$', t)
-        if mm: st[mm[1]] = int(mm[2], 16); [st.pop(x, None) for x in ('bc', 'de', 'hl') if mm[1] in x]
+        if mm: st[mm[1]] = int(mm[2], 16); st['@' + mm[1]] = o + 1; [st.pop(x, None) for x in ('bc', 'de', 'hl') if mm[1] in x]
         elif m16:
             mm = m16
             v = int(mm[2], 16); st[mm[1]] = v; st[mm[1][0]] = v >> 8; st[mm[1][1]] = v & 0xff
@@ -98,9 +100,12 @@ while work:
             # 遠くへの呼び出し
             if tgt == BANKSWITCH and 'b' in st and 'hl' in st:
                 work.append((st['b'], st['hl'], st['b'], {}))
+                farsrc.add((st['b'], st['@b']))
+            if tgt in FAR_A and 'a' in st:
+                farsrc.add((st['a'], st['@a']))
             if tgt == PREDEF and 'a' in st:
                 pb, pa = PREDEF_TABLE; po = off(pb, pa) + st['a'] * 3
-                keep[po:po + 3] = True
+                keep[po:po + 3] = True; farsrc.add((rom[po], po))
                 work.append((rom[po], rom[po + 1] | rom[po + 2] << 8, rom[po], {}))
             if tgt < 0x4000:
                 pass   # バンク0 はまるごと残すので、たどらない
@@ -123,10 +128,21 @@ while work:
 labels0 = sorted({int(l[3:7], 16) for l in open(SRC[:-4] + '.sym') if l.startswith('00:') and int(l[3:7], 16) < 0x4000})
 for i, st0 in enumerate(labels0):
     en = labels0[i + 1] if i + 1 < len(labels0) else 0x4000
-    a = st0; m0 = m_for(0)
+    a = st0; m0 = m_for(0); st0r = {}
     while a < en:
         t, n = one(m0, a)
         if rom[a] == 0xea and 0x20 <= rom[a + 2] < 0x40 and a + 3 <= en: sites.add(a)
+        mm = re.match(r'ld (a|b), \$([0-9a-f]{2})$', t)
+        if mm: st0r[mm[1]] = (int(mm[2], 16), a + 1)
+        elif re.match(r'(ldh|ld|pop|inc|dec) (a|b|af|bc)\b', t) or re.match(r'(add|adc|sub|sbc|and|xor|or|cpl)', t):
+            st0r.pop('a' if re.search(r' a|af|^(add|adc|sub|sbc|and|xor|or|cpl)', t) else 'b', None)
+        mt = re.match(r'(call|jp) \$([0-9a-f]{4})$', t)
+        if mt:
+            tg = int(mt[2], 16)
+            if tg == BANKSWITCH and 'b' in st0r: farsrc.add(st0r['b'])
+            if tg in FAR_A and 'a' in st0r: farsrc.add(st0r['a'])
+        if t.startswith('call') or t.startswith('rst') or t in ('ret', 'reti', 'jp hl') or t.startswith('jp $') or t.startswith('jr'):
+            st0r = {}
         a += n
 # 3) 区間にまとめる（バンクごと、$4000-$7fff の中のアドレスで）
 def intervals(b):
@@ -149,76 +165,58 @@ IV = {b: v for b, v in IV.items() if v}
 for b, v in IV.items():
     for s, e in v: keep[b * 0x4000 + s:b * 0x4000 + e] = True
 
-# 4) 詰める（大きいものから、アドレスが重ならない実バンクへ）
-phys = {}   # 実バンク -> [区間]
-place = {}  # 論理バンク -> 実バンク
+# 4) 置き場所：ロムを 16 バンク（256KB）にすると、バンク番号 v は自動で v & 15 のバンクとして読まれる（MBC のミラー）。
+#    だから、ほとんどのバンクは番号を変えずに v & 15 に置ける。ゲームのプログラムは 1MB 版とまったく同じ時間で動く。
+#    v & 15 == 0 のバンク（10・20・30）はバンク0 と重なるので、空いているバンクに置いて、番号の出どころを書きかえる。
+SIZE = 16
+phys = {}; place = {}; renum = {}
 def fits(p, v):
-    for s, e in v:
+    if p == 0: return False
+    for s_, e_ in v:
         for s2, e2 in phys.get(p, []):
-            if s < e2 and s2 < e: return False
+            if s_ < e2 and s2 < e_: return False
     return True
-order = sorted(IV, key=lambda b: -sum(e - s for s, e in IV[b]))
-for b in order:
-    p = 1
-    while not fits(p, IV[b]): p += 1
+for b in sorted(IV):
+    p = b % SIZE
+    if not fits(p, IV[b]): continue
     phys.setdefault(p, []).extend(IV[b]); place[b] = p
-used = max(phys) + 1
-size = 2
-while size < used: size *= 2
-print('使うバンク', len(IV) + 1, '→ 実バンク', used, '→ ROM', size * 16, 'KB')
+for b in sorted(IV):
+    if b in place: continue
+    p = next(p for p in range(1, SIZE) if fits(p, IV[b]))
+    phys.setdefault(p, []).extend(IV[b]); place[b] = p; renum[b] = p
+size = SIZE
+print('使うバンク', len(IV) + 1, '→ ROM', size * 16, 'KB  番号を変えるバンク', {f'{k:02x}': f'{v:02x}' for k, v in renum.items()})
+# 番号の出どころ：残すプログラムの中の farcall・predef 表・FarCopyData など
+patch_src = sorted({o for v, o in farsrc if v in renum and (o < 0x4000 or keep[o])})
+miss = [v for v in renum if not any(v2 == v for v2, o in farsrc if (o < 0x4000 or keep[o]))]
+if miss: raise SystemExit('番号の出どころが見つからないバンク: ' + ' '.join(f'{v:02x}' for v in miss))
 
-# 5) 新しい ROM を作る
+# 5) 新しい ROM を作る。ひとつの実バンクに論理バンクが 1 つだけなら、そのバンクをまるごと写す
+#    （遊んで通らなかった道すじも残る）。いくつかで分け合う実バンクは、隙間を前の区間の持ち主にわたす。
 new = bytearray(b'\xff' * (size * 0x4000))
-k0 = keep[:0x4000]
-new[:0x4000] = bytes(rom[i] if k0[i] else 0xff for i in range(0x4000))
-for b, p in place.items():
-    for s, e in IV[b]:
-        new[p * 0x4000 + s:p * 0x4000 + e] = rom[b * 0x4000 + s:b * 0x4000 + e]
-
-# 6) バンクの表と切り替えルーチンを、バンク0 の消した所に置く
-refs = set()
-for o in np.where(code)[0]:
-    if o >= 0x4000 and rom[o] in (0xcd, 0xc3, 0xc4, 0xcc, 0xd4, 0xdc, 0xc2, 0xca, 0xd2, 0xda, 0x21, 0x11, 0x01):
-        refs.add(rom[o + 1] | rom[o + 2] << 8)
-names0 = {}
-for l in open(SRC[:-4] + '.sym'):
-    if l.startswith('00:') and '.' not in l and int(l[3:7], 16) < 0x4000: names0.setdefault(int(l[3:7], 16), l.split()[1].strip())
-def free0(n):
-    L = sorted(names0) + [0x4000]
-    for i in range(len(L) - 1):
-        a, e = L[i], L[i + 1]
-        if a < 0x150 or e - a < n: continue
-        if (cov[a:e] > 0).any(): continue
-        if any(a <= r < e for r in refs): continue
-        if any(a <= x < e or x <= a < x + 3 for x in sites): continue
-        if not names0[a][0].isupper() or names0[a] in KEEP0: continue
-        return a, names0[a]
-    raise SystemExit('バンク0 に置き場がない')
-KEEP0 = set()
-T, TNAME = free0(0x58)
-table = [place.get(b, 0) for b in range(0x40)]
-table[0] = table[1] = place.get(1, 1)
-new[T:T + 0x40] = bytes(table)
-R = T + 0x40
-remap = bytes([0xe5,                 # push hl
-               0xf5,                 # push af
-               0xc6, T & 0xff,       # add LOW(table)
-               0x6f,                 # ld l, a
-               0x3e, T >> 8,         # ld a, HIGH(table)
-               0xce, 0x00,           # adc 0
-               0x67,                 # ld h, a
-               0x7e,                 # ld a, [hl]
-               0xea, 0x00, 0x20,     # ld [$2000], a
-               0xf1,                 # pop af
-               0xe1,                 # pop hl
-               0xc9])                # ret
-new[R:R + len(remap)] = remap
-for o in sorted(sites):
-    if o >= 0x4000:
-        b = o // 0x4000; p = place[b]; o2 = p * 0x4000 + (o - b * 0x4000)
-    else: o2 = o
-    if new[o2] != 0xea: print("NG site", hex(o), place.get(o // 0x4000), [iv for iv in IV.get(o // 0x4000, []) if iv[0] <= (o % 0x4000) < iv[1]]); continue
-    new[o2:o2 + 3] = bytes([0xcd, R & 0xff, R >> 8])
+new[:0x4000] = rom[:0x4000]
+owner = {}   # 実バンク -> 長さ 0x4000 の持ち主（論理バンク）の並び
+for p in range(1, size):
+    occ = [b for b in place if place[b] == p]
+    if not occ: continue
+    if len(occ) == 1:
+        own = [occ[0]] * 0x4000
+    else:
+        ivs = sorted((s_, e_, b) for b in occ for s_, e_ in IV[b])
+        own = [None] * 0x4000
+        for k, (s_, e_, b) in enumerate(ivs):
+            nxt = ivs[k + 1][0] if k + 1 < len(ivs) else 0x4000
+            st_ = 0 if k == 0 else s_
+            for x in range(st_, nxt): own[x] = b
+    owner[p] = own
+    for x in range(0x4000):
+        new[p * 0x4000 + x] = rom[own[x] * 0x4000 + x]
+def newoff(o):
+    if o < 0x4000: return o
+    b = o // 0x4000; return place[b] * 0x4000 + o % 0x4000
+for o in patch_src:
+    v = rom[o]; assert v in renum
+    new[newoff(o)] = renum[v]
 # ヘッダー：ROM の大きさ、チェックサム
 new[0x148] = {2: 0, 4: 1, 8: 2, 16: 3, 32: 4, 64: 5}[size]
 c = 0
@@ -228,13 +226,18 @@ s = (sum(new) - new[0x14e] - new[0x14f]) & 0xffff
 new[0x14e] = s >> 8; new[0x14f] = s & 0xff
 open(OUT, 'wb').write(new)
 with open(OUT[:-4] + '.map.txt', 'w') as f:
-    f.write(f'place {TNAME} table {T:04x} remap {R:04x} sites ' + ' '.join(f'{o:x}' for o in sorted(sites)) + '\n')
-    for b in sorted(place): f.write(f'{b:02x} -> {place[b]:02x} ' + ' '.join(f'{s + 0x4000:04x}-{e + 0x3fff:04x}' for s, e in IV[b]) + '\n')
+    f.write('renumber ' + ' '.join(f'{k:02x}->{v:02x}' for k, v in renum.items()) + '  at ' + ' '.join(f'{o:x}({rom[o]:02x})' for o in patch_src) + '\n')
+    for p in sorted(owner):
+        own = owner[p]; segs = []; x = 0
+        while x < 0x4000:
+            y = x
+            while y < 0x4000 and own[y] == own[x]: y += 1
+            segs.append(f'{own[x]:02x}:{x + 0x4000:04x}-{y + 0x3fff:04x}'); x = y
+        f.write(f'実バンク {p:02x} ← ' + ' '.join(segs) + '\n')
     for w in sorted(set(warn)): f.write('WARN ' + w + '\n')
 print('残した', int(keep.sum()), 'バイト  切り替え場所', len(sites), ' 注意', len(set(warn)))
 print('summer_beach_small %08X' % zlib.crc32(new))
 # 残した場所（新しい ROM の上で）。試験で「消した所を読んでいないか」を見るのに使う
 pk = np.zeros(len(new), bool); pk[:0x4000] = True
-for b, p in place.items():
-    for s_, e_ in IV[b]: pk[p * 0x4000 + s_:p * 0x4000 + e_] = True
+for p in owner: pk[p * 0x4000:(p + 1) * 0x4000] = True
 np.save(OUT[:-4] + '.keep.npy', pk)

@@ -9,3 +9,4 @@
 - cmp_small.py SEED フレーム数 出力 [ROM_A ROM_B] … 小さい ROM と 1MB 版を同じ操作で比べる
 - cmp_noinput.py 出力 ROM_A ROM_B … ボタンなしで 1 回分を通して比べる（乱数を固定した試験用コピー test_*_det.gbc で）
 - BEACH_ROM=summer_beach_small.gbc で misc.py・cry.py（CRY_BANK=04）・pals.py・full.py を小さい ROM に向けられる
+- cmp_exact.py SEED フレーム数 出力 ROM_A ROM_B … 電源を入れてから同じ操作で、画面・音・セーブが 1 コマ・1 サンプルまで同じかを見る（乱数も本物のまま）
