@@ -70,6 +70,13 @@ blk = [list(rom[O(BLK) + 1 + k * 4:O(BLK) + 5 + k * 4]) for k in range(9)]
 BOARD = {}
 for f in range(1, 19):
     BOARD[f] = {0x10, 0x20, 0x21, 0x22} if f <= 4 else {0x02, 0x12, 0x22} if f >= 17 else {0x12, 0x20, 0x21, 0x22} if 11 <= f <= 14 else {0x20, 0x21, 0x22}
+# 口を開いたときの舌（1 点）。ポーズごとの位置（24×24 の中の 行, 列）
+MOUTH = {1: {(13, 11)}, 2: {(13, 11)}, 3: {(12, 11)}, 4: {(12, 11)}, 5: {(11, 11)}, 6: {(11, 11)}, 7: {(11, 8)}, 8: {(11, 8)},
+         9: {(12, 6)}, 10: {(12, 6)}, 15: {(12, 12)}, 17: {(13, 10)}, 18: {(12, 10)}}
+# しっぽの付け根：右下の部品 $22（f7・f8 は $21 にも 1 点）の、小さな水色のかたまり
+#   f1〜f6 … パレット2（白・黄・茶・黒）。部品に入るボードの先（f3〜f6）はすき間にする（下の海はボードと同じ水色）
+#   f7・f8 … ボードの大部分が同じ部品なので、パレット3（白・茶・水色・黒）。付け根を色1（茶）に。部品の黄色 2 点も茶になる
+TAILPAL = {1: 2, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 3, 8: 3}
 # ほっぺの部品：ポーズ全体（24×24）で見て、まわり 4 方向がどれもすき間（色0）でない水色の点＝ほっぺ。
 # すき間に接する水色の点（背中の輪郭のふち取り）は輪郭の色（色3）に。
 def frame_pixels(base):
@@ -103,6 +110,7 @@ for f in range(1, 19):
     keep = cheek_mask(img, bc)
     if f in (13, 14):   # 横向き：部品 $11 の右はし（ボードのふち）はほっぺではない
         keep = {(Y, X) for (Y, X) in keep if not (8 <= Y < 16 and X >= 13)}
+    keep |= MOUTH.get(f, set())   # 口を開いたときの舌＝赤
     for (y, x, t, at) in blk:
         if t in BOARD[f]: continue
         tt = (base + t) & 0xff; oy = ((y ^ 0x80) - 0x80) + 12; ox = ((x ^ 0x80) - 0x80) + 12
@@ -113,6 +121,38 @@ for f in range(1, 19):
         cheek_tiles[tt] = (f, fix)
 for tt, (f, fix) in sorted(cheek_tiles.items()):
     edit_tile(obj, tt, fix, f'ピカチュウ f{f}：ほっぺ以外の水色を輪郭の色に')
+def tail_root(img):
+    seen = set(); out = set()
+    for Y in range(24):
+        for X in range(24):
+            if img[Y][X] != 2 or (Y, X) in seen: continue
+            st = [(Y, X)]; comp = []; seen.add((Y, X))
+            while st:
+                y, x = st.pop(); comp.append((y, x))
+                for dy, dx in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+                    n = (y + dy, x + dx)
+                    if 0 <= n[0] < 24 and 0 <= n[1] < 24 and img[n[0]][n[1]] == 2 and n not in seen: seen.add(n); st.append(n)
+            if len(comp) <= 5 and all(y >= 16 and x >= 15 for y, x in comp): out |= set(comp)
+    return out
+for f, pal in TAILPAL.items():
+    base = rom[O(TABLE) + f * 3]; img = frame_pixels(base); tr = tail_root(img)
+    for off_, oy, ox in ((0x22, 16, 16), (0x21, 16, 8)):
+        tt = (base + off_) & 0xff
+        if off_ == 0x22:
+            def fix(q, oy=oy, ox=ox, tr=tr, pal=pal):
+                for yy in range(8):
+                    for xx in range(8):
+                        if q[yy][xx] != 2: continue
+                        if (oy + yy, ox + xx) in tr:
+                            if pal == 3: q[yy][xx] = 1   # 茶（パレット3 の色1）
+                        elif pal == 2: q[yy][xx] = 0     # ボードの水色 → すき間（下の海の水色が見える。海とボードは同じ水色）
+            edit_tile(obj, tt, fix, f'ピカチュウ f{f}：しっぽの付け根（パレット{pal}）')
+        else:
+            def fix21(q, oy=oy, ox=ox, tr=tr):
+                for yy in range(8):
+                    for xx in range(8):
+                        if q[yy][xx] == 2 and (oy + yy, ox + xx) in tr: q[yy][xx] = 1   # ボードと同じ部品なので黄に
+            edit_tile(obj, tt, fix21, f'ピカチュウ f{f}：しっぽの付け根（部品 $21 の点は黄に）')
 # 正面のポーズ（f15 base $6c・f16 base $9c）のボードの中の黄色 → 水色
 def board_fill(q):
     for y in range(8):
@@ -121,25 +161,26 @@ def board_fill(q):
 for base in (0x6c, 0x9c): edit_tile(obj, (base + 0x21) & 0xff, board_fill, 'サーフボード：中の黄色をなくす')
 
 # フレームの組：B（ほとんど）は今の組を書きかえ、A・C・E は新しい組（3e:4000〜 の使わない SurfingPikachuMinigame の所）
-def block(board):
+def block(board, tailpal=None):
     b = bytearray([9])
     for (y, x, t, at) in blk:
-        b += bytes([y, x, t, (at & ~7) | (0 if t in board else 1)])
+        pal = (tailpal if (t == 0x22 and tailpal) else 0) if t in board else 1
+        b += bytes([y, x, t, (at & ~7) | pal])
     return bytes(b)
-emit(0x3e, BLK, block(BOARD[5]), 'ピカチュウ 9 枚の組：ほっぺの部品をパレット1に（f5〜f10・f15・f16）')
-NEW = 0x4000
-groups = [('A', [1, 2, 3, 4]), ('E', [11, 12, 13, 14]), ('C', [17, 18])]
-for name, fs in groups:
-    emit(0x3e, NEW, block(BOARD[fs[0]]), f'ピカチュウ 9 枚の組 {name}（f{fs[0]}〜f{fs[-1]}）')
+emit(0x3e, BLK, block(BOARD[9]), 'ピカチュウ 9 枚の組：ほっぺの部品をパレット1に（f9・f10・f15・f16）')
+groups = [('A', [1, 2, 3, 4], 0x4000), ('E', [11, 12, 13, 14], 0x4025), ('C', [17, 18], 0x404a),
+          ('B5', [5, 6], 0x7fa0), ('B7', [7, 8], 0x7fc5)]   # 3e:4000〜 は使わない SurfingPikachuMinigame、3e:7fa0〜 は空き
+assert all(b == 0 for b in rom[O(0x7fa0):O(0x8000)])
+for name, fs, NEW in groups:
+    emit(0x3e, NEW, block(BOARD[fs[0]], TAILPAL.get(fs[0])), f'ピカチュウ 9 枚の組 {name}（f{fs[0]}〜f{fs[-1]}）')
     for f in fs:
         emit(0x3e, TABLE + f * 3 + 1, bytes([NEW & 0xff, NEW >> 8]), f'フレーム f{f} → 組 {name}')
-    NEW += 37
 
-# 水しぶき（f25 3e:5595・f19 3e:55a2・f20 3e:55bb。絵は色1 だけ）→ パレット2（色15 の色1 を白っぽい水色に）
+# 水しぶき（f25 3e:5595・f19 3e:55a2・f20 3e:55bb。絵は色1 だけ）→ パレット4（白）
 for ptr, n in ((0x5595, 3), (0x55a2, 6), (0x55bb, 12)):
     b = bytearray(rom[O(ptr):O(ptr) + 1 + 4 * n]); assert b[0] == n
-    for k in range(n): b[4 + 4 * k] = (b[4 + 4 * k] & ~7) | 2
-    emit(0x3e, ptr, bytes(b), '水しぶき → パレット2')
+    for k in range(n): b[4 + 4 * k] = (b[4 + 4 * k] & ~7) | 4
+    emit(0x3e, ptr, bytes(b), '水しぶき → パレット4（ビーチの色を OBP1 で：色1＝白。元のゲームボーイ版と同じ白）')
 # はじめの画面で泳ぐピカチュウ（f32〜f35, 3e:565b, 4×3 枚。左右反転）：まん中の段をパレット1（ほっぺ）に。
 # まん中の段の絵は、2×2 の水色のかたまり（ほっぺ）以外の水色を輪郭の色に
 SWIM = 0x565b
@@ -171,7 +212,12 @@ assert rom[O(0x7c52):O(0x7c54)] == b'\xe6\xe0'
 emit(0x3e, 0x7c53, bytes([0xe7]), 'SetCurrentAnimatedObjectOAMAttributes：パレットの番号も残す')
 
 # 島とヤシの木（背景 $15-$18）
-def palm(q): pass   # 葉は色3のまま（パレット2 で緑）
+def palm(q):
+    for r in q:
+        for x in range(8):
+            if r[x] == 3: r[x] = 2   # 葉＝緑（背景パレット4 の色2）
+edit_tile(bg, 0x15, palm, 'ヤシの葉')
+edit_tile(bg, 0x16, palm, 'ヤシの葉')
 def isl17(q):
     for y in range(3, 8):
         for x in range(8):
@@ -188,15 +234,17 @@ edit_tile(bg, 0x18, isl18, '島と葉のはし')
 WIN = 0x6510
 assert WIN % 16 == 0 and all(b == 0 for b in rom[9 * 0x4000 + WIN - 0x4000:9 * 0x4000 + WIN - 0x4000 + 0x60])
 emit(0x09, 0x5d51, bytes([(WIN - 0x5d53) & 0xff, (WIN - 0x5d53) >> 8]), 'ウィンドウの色分けの場所 → 09:6510')
-emit(0x09, WIN + 0x01, bytes([2, 2]), 'ウィンドウ 1 行目：ヤシの葉 → パレット2')
-emit(0x09, WIN + 0x21, bytes([3, 3]), 'ウィンドウ 2 行目：島と幹 → パレット3')
+emit(0x09, WIN + 0x01, bytes([4, 4]), 'ウィンドウ 1 行目：ヤシの葉 → パレット4')
+emit(0x09, WIN + 0x21, bytes([4, 4]), 'ウィンドウ 2 行目：島と幹 → パレット4')
 
 # 色の表（バンク09 の 6ef9 + 番号×8）：使わない 14・15・16 番を書きかえる
 def rgb(r, g, b): v = r | g << 5 | b << 10; return bytes([v & 0xff, v >> 8])
 PAL = 0x6ef9
 emit(0x09, PAL + 0x14 * 8, rgb(31, 31, 31) + rgb(31, 31, 0) + rgb(31, 4, 4) + rgb(3, 3, 3), '色14：ほっぺ（白・黄・赤・こげ茶）')
-emit(0x09, PAL + 0x15 * 8, rgb(31, 31, 31) + rgb(24, 30, 31) + rgb(11, 23, 31) + rgb(3, 17, 5), '色15：ヤシの葉と水しぶき（白・水しぶきの白っぽい水色・水色・緑）')
-emit(0x09, PAL + 0x16 * 8, rgb(31, 31, 31) + rgb(30, 25, 13) + rgb(3, 17, 5) + rgb(15, 8, 3), '色16：島（白・砂・緑・茶）')
+emit(0x09, PAL + 0x15 * 8, rgb(31, 31, 31) + rgb(31, 31, 0) + rgb(17, 9, 3) + rgb(3, 3, 3), '色15：しっぽの付け根（白・黄・茶・こげ茶）')
+emit(0x09, PAL + 0x16 * 8, rgb(31, 31, 31) + rgb(17, 9, 3) + rgb(11, 23, 31) + rgb(3, 3, 3), '色16：しっぽの付け根とボード（白・茶・水色・こげ茶）')
+# 背景パレット4 は色の表の 0F 番から（1c:67d0）。サマービーチでは画面に使われていないので、島とヤシの木に
+emit(0x09, PAL + 0x0f * 8, rgb(31, 31, 31) + rgb(30, 25, 13) + rgb(3, 17, 5) + rgb(15, 8, 3), '色0F（背景パレット4）：島とヤシの木（白・砂・緑・茶）')
 # PAL_SET：4 つの枠を ビーチ・14・15・16 に
 emit(0x1c, 0x6bb4, bytes([0x51, 0x25, 0x00, 0x14, 0x00, 0x15, 0x00, 0x16, 0x00]), 'サマービーチの PAL_SET')
 
