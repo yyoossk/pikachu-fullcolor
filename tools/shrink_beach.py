@@ -217,6 +217,42 @@ def newoff(o):
 for o in patch_src:
     v = rom[o]; assert v in renum
     new[newoff(o)] = renum[v]
+# 写した所の中で、番号を変えたバンクを呼んでいる所を、ふだん通らない道すじも含めてすべて書きかえる
+#   ld b,v / ld hl,nn / call|jp Bankswitch、ld hl,nn / ld b,v / call|jp Bankswitch、
+#   ld a,v / call FarCopyData など、ld a,v / ldh [hLoadedROMBank],a / ld [$2000],a
+PAT = re.compile(rb'\x06(.)\x21..[\xcd\xc3]\x83\x3e|\x21..\x06(.)[\xcd\xc3]\x83\x3e|\x3e(.)\xcd(..)|\x3e(.)\xe0\xb8\xea\x00\x20', re.S)
+def copied():
+    yield 0, 0, 0, 0x4000
+    for p_, own in owner.items():
+        x = 0
+        while x < 0x4000:
+            y = x
+            while y < 0x4000 and own[y] == own[x]: y += 1
+            yield own[x], p_, x, y; x = y
+extra = []
+for b, p_, s_, e_ in copied():
+    base = b * 0x4000; seg = rom[base + s_:base + e_]
+    for mm in PAT.finditer(seg):
+        if mm.group(3) is not None:
+            if int.from_bytes(mm.group(4), 'little') not in FAR_A: continue
+            vo = 1
+        elif mm.group(2) is not None: vo = 4
+        else: vo = 1
+        o = base + s_ + mm.start() + vo; v = rom[o]
+        if v in renum:
+            no = p_ * 0x4000 + s_ + mm.start() + vo if b else o
+            new[no] = renum[v]; extra.append(o)
+# predef 表（3d バンク）：番号を変えたバンクの入口は全部書きかえる
+pb, pa = PREDEF_TABLE
+# 表の終わり＝表のあとの最初のラベル
+_labs = sorted(int(l[3:7], 16) for l in open(SRC[:-4] + '.sym') if l.startswith(f'{pb:02x}:') and 0x4000 <= int(l[3:7], 16) < 0x8000)
+PREDEF_END = next(a_ for a_ in _labs if a_ > pa)
+if pb in place:
+    for i in range((PREDEF_END - pa) // 3):
+        o = off(pb, pa) + i * 3
+        if rom[o] in renum and owner[place[pb]][(o % 0x4000)] == pb:
+            new[place[pb] * 0x4000 + o % 0x4000] = renum[rom[o]]; extra.append(o)
+print('ふだん通らない所の書きかえ', len(set(extra) - set(patch_src)))
 # ヘッダー：ROM の大きさ、チェックサム
 new[0x148] = {2: 0, 4: 1, 8: 2, 16: 3, 32: 4, 64: 5}[size]
 c = 0
@@ -226,7 +262,7 @@ s = (sum(new) - new[0x14e] - new[0x14f]) & 0xffff
 new[0x14e] = s >> 8; new[0x14f] = s & 0xff
 open(OUT, 'wb').write(new)
 with open(OUT[:-4] + '.map.txt', 'w') as f:
-    f.write('renumber ' + ' '.join(f'{k:02x}->{v:02x}' for k, v in renum.items()) + '  at ' + ' '.join(f'{o:x}({rom[o]:02x})' for o in patch_src) + '\n')
+    f.write('renumber ' + ' '.join(f'{k:02x}->{v:02x}' for k, v in renum.items()) + '  at ' + ' '.join(f'{o:x}({rom[o]:02x})' for o in sorted(set(patch_src) | set(extra))) + '\n')
     for p in sorted(owner):
         own = owner[p]; segs = []; x = 0
         while x < 0x4000:
