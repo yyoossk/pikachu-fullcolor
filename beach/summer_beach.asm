@@ -123,3 +123,4 @@ BeachEnableSRAM:
 	ld a, BEACH_SAVE_BANK
 	ld [rRAMB], a
 	ret
+

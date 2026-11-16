@@ -4,7 +4,7 @@
 #include <string.h>
 #include <Core/gb.h>
 static GB_gameboy_t *gb; static int wlo=-1,whi=-1; static FILE*wlog;
-static bool wcb(GB_gameboy_t*g,uint16_t a,uint8_t d){ if(a>=wlo&&a<=whi&&wlog){ uint16_t sp=g->registers[GB_REGISTER_SP]; fprintf(wlog,"%04x %02x pc=%04x bank=%02x s0=%04x s1=%04x s2=%04x s3=%04x\n",a,d,g->pc,g->mbc_rom_bank, GB_safe_read_memory(g,sp)|GB_safe_read_memory(g,sp+1)<<8, GB_safe_read_memory(g,sp+2)|GB_safe_read_memory(g,sp+3)<<8, GB_safe_read_memory(g,sp+4)|GB_safe_read_memory(g,sp+5)<<8, GB_safe_read_memory(g,sp+6)|GB_safe_read_memory(g,sp+7)<<8); } return true; }
+static bool wcb(GB_gameboy_t*g,uint16_t a,uint8_t d){ if(a>=wlo&&a<=whi&&wlog){ uint16_t sp=g->registers[GB_REGISTER_SP]; fprintf(wlog,"%04x %02x vbk=%d hdma=%d pc=%04x bank=%02x s0=%04x s1=%04x s2=%04x s3=%04x\n",a,d,g->cgb_vram_bank,g->hdma_on,g->pc,g->mbc_rom_bank, GB_safe_read_memory(g,sp)|GB_safe_read_memory(g,sp+1)<<8, GB_safe_read_memory(g,sp+2)|GB_safe_read_memory(g,sp+3)<<8, GB_safe_read_memory(g,sp+4)|GB_safe_read_memory(g,sp+5)<<8, GB_safe_read_memory(g,sp+6)|GB_safe_read_memory(g,sp+7)<<8); } return true; }
  static uint32_t px[256*224]; static int vbl;
 static FILE *vrec=NULL, *arec=NULL;
 static uint8_t cov[0x800000];

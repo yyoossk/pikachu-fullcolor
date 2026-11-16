@@ -68,6 +68,11 @@ python3 tools/build.py xf
 python3 tools/build_beach.py                 # → build/summer_beach.gbc
 python3 tools/mkips.py build/summer_beach.gbc ピカチュウのサマービーチ.ips   # v1.0〜v1.3 のどれに当てても同じ
 ```
+### 色（beach/colors.asm）
+`python3 tools/gen_beach_colors.py beach/vram/game_8000.bin beach/vram/game_8800.bin beach/vram/intro_8000.bin` で作る（データだけ。ゲームの時間＝波の並びは変わらない）。
+雲は黒い輪郭と白、ピカチュウのほっぺは赤（スプライトのパレット1）、正面のボードの中の黄色をなくす、水しぶきは白っぽい水色（パレット2）、
+下の島はヤシの葉が緑・幹が茶・島が砂の色（ウィンドウの色分けを 09:6510 に）。beach/vram/ は元の ROM で遊んでいる最中・はじめの画面の VRAM。
+
 ### 要らない部分を消して小さくする（256KB）
 ```
 # 1) 遊んで、読まれた場所を記録（12通り）
