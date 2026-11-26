@@ -23,6 +23,8 @@ def const(name, path='constants/pokemon_constants.asm'):
     raise KeyError(name)
 def rom(k):
     b = os.path.join(ROOT, 'build', k + '.gbc')
+    if os.environ.get('ROMDIR'):  # くらべる ための 前の ROM（sym は build の もの）
+        return os.path.join(os.environ['ROMDIR'], k + '.gbc'), os.path.join(ROOT, 'build', k + '.sym')
     return (b, os.path.join(ROOT, 'build', k + '.sym')) if os.path.exists(b) else (os.path.join(ROOT, 'base', k + '.gbc'), os.path.join(ROOT, 'syms', k + '.sym'))
 def boot(k, frames=600):
     r, s = rom(k); S, BK = loadsym(s)
